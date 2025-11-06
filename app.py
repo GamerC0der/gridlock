@@ -1,5 +1,8 @@
-import requests, argparse, sys, time
+import requests, time, json
 from bs4 import BeautifulSoup
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
 
 def scrape_startpage(query, n=10):
     s = requests.Session()
@@ -16,13 +19,23 @@ def scrape_startpage(query, n=10):
             d = c.find('p', class_='result-description') or c.find('span', class_='result-description')
             results.append({'title': t.get_text(strip=True), 'url': t.get('href'), 'desc': d.get_text(strip=True) if d else ''})
         return results
-    except Exception as e: print(f"Error: {e}", file=sys.stderr); return []
+    except Exception as e:
+        print(f"Error: {e}")
+        return []
+
+@app.route('/search', methods=['GET'])
+def search():
+    query = request.args.get('q')
+    if not query:
+        return jsonify({'error': 'Missing query parameter "q"'}), 400
+
+    n = request.args.get('n', default=10, type=int)
+    results = scrape_startpage(query, n)
+    return jsonify({'query': query, 'results': results})
+
+@app.route('/', methods=['GET'])
+def health():
+    return jsonify({'status': 'running', 'message': 'GridLock search API'})
 
 if __name__ == '__main__':
-    p = argparse.ArgumentParser()
-    p.add_argument('query')
-    p.add_argument('-n', type=int, default=10)
-    a = p.parse_args()
-    results = scrape_startpage(a.query, a.n)
-    if not results: print("No results found.")
-    for i, r in enumerate(results, 1): print(f"{i}. {r['title']}\n   {r['url']}\n   {r['desc']}\n")
+    app.run(host='0.0.0.0', port=7860, debug=True)
