@@ -18,6 +18,11 @@ export default function Home() {
   const [selectedResult, setSelectedResult] = useState(-1);
   const [currentQuery, setCurrentQuery] = useState('');
   const [showRightPanel, setShowRightPanel] = useState(false);
+  const [cards, setCards] = useState<Array<{id: number, x: number, y: number, content: string}>>([]);
+  const [cardId, setCardId] = useState(0);
+  const [draggedCard, setDraggedCard] = useState<number | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [dragPreview, setDragPreview] = useState<{ x: number, y: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -80,6 +85,71 @@ export default function Home() {
     }
   };
 
+  const handleGridClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (draggedCard !== null || e.target !== e.currentTarget) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const snappedX = Math.floor(x / 160) * 160;
+    const snappedY = Math.floor(y / 160) * 160;
+
+    const existingCard = cards.find(card => card.x === snappedX && card.y === snappedY);
+    if (!existingCard) {
+      const newCard = {
+        id: cardId,
+        x: snappedX,
+        y: snappedY,
+        content: `Card ${cardId + 1}`
+      };
+      setCards(prev => [...prev, newCard]);
+      setCardId(prev => prev + 1);
+    }
+  };
+
+  const handleCardMouseDown = (e: React.MouseEvent<HTMLDivElement>, cardId: number) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const containerRect = e.currentTarget.parentElement?.getBoundingClientRect();
+    if (containerRect) {
+      setDragOffset({
+        x: e.clientX - containerRect.left - rect.left,
+        y: e.clientY - containerRect.top - rect.top
+      });
+    }
+    const card = cards.find(c => c.id === cardId);
+    if (card) {
+      setDragPreview({ x: card.x, y: card.y });
+    }
+    setDraggedCard(cardId);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (draggedCard === null) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left - dragOffset.x;
+    const y = e.clientY - rect.top - dragOffset.y;
+
+    const snappedX = Math.round(x / 160) * 160;
+    const snappedY = Math.round(y / 160) * 160;
+
+    setDragPreview({ x: snappedX, y: snappedY });
+  };
+
+  const handleMouseUp = () => {
+    if (draggedCard !== null && dragPreview) {
+      setCards(prev => prev.map(card =>
+        card.id === draggedCard
+          ? { ...card, x: dragPreview.x, y: dragPreview.y }
+          : card
+      ));
+    }
+    setDraggedCard(null);
+    setDragPreview(null);
+  };
+
   useEffect(() => {
     if (selectedResult >= 0 && resultRefs.current[selectedResult]) {
       resultRefs.current[selectedResult]?.scrollIntoView({
@@ -90,7 +160,12 @@ export default function Home() {
   }, [selectedResult]);
 
   return (
-    <div className={`min-h-screen bg-black custom-grid-bg ${showResults ? '' : 'flex items-center justify-center flex-col'}`}>
+    <div
+      className={`min-h-screen bg-black custom-grid-bg ${showResults ? '' : 'flex items-center justify-center flex-col'}`}
+      onClick={handleGridClick}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+    >
       <button
         onClick={() => setShowRightPanel(!showRightPanel)}
         className="fixed left-8 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center transition-all duration-200 z-10"
@@ -275,6 +350,30 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {cards.map(card => {
+        const isDragging = draggedCard === card.id;
+        const position = isDragging && dragPreview ? dragPreview : { x: card.x, y: card.y };
+
+        return (
+          <div
+            key={card.id}
+            className={`absolute bg-gray-800/90 backdrop-blur-sm border rounded-lg p-4 cursor-move select-none transition-opacity ${
+              isDragging ? 'border-blue-400 shadow-lg opacity-80' : 'border-gray-600'
+            }`}
+            style={{
+              left: position.x,
+              top: position.y,
+              width: '140px',
+              height: '140px',
+              zIndex: isDragging ? 50 : 10
+            }}
+            onMouseDown={(e) => handleCardMouseDown(e, card.id)}
+          >
+            <div className="text-white text-sm font-medium">{card.content}</div>
+          </div>
+        );
+      })}
     </div>
   );
 }
