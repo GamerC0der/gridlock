@@ -89,7 +89,7 @@ export default function Home() {
   }, [selectedResult]);
 
   return (
-    <div className={`min-h-screen bg-black ${showResults ? '' : 'flex items-center justify-center flex-col'}`}>
+    <div className={`min-h-screen bg-black custom-grid-bg ${showResults ? '' : 'flex items-center justify-center flex-col'}`}>
       {showResults && (
         <div className="pt-8 pb-4 flex justify-center">
           <div className={`relative ${inputWidth} max-w-2xl`}>
@@ -183,7 +183,7 @@ export default function Home() {
                   </div>
                   ))}
                 </div>
-                <div className="text-center mt-6">
+                <div className="text-center mt-6 mb-6">
                   <p className="text-gray-400 text-sm">
                     Found {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} for <span className="text-blue-400 font-medium">"{currentQuery}"</span>
                   </p>
