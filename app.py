@@ -1,8 +1,10 @@
 import requests, time, json
 from bs4 import BeautifulSoup
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 def scrape_startpage(query, n=10):
     s = requests.Session()
