@@ -18,7 +18,7 @@ export default function Home() {
   const [selectedResult, setSelectedResult] = useState(-1);
   const [currentQuery, setCurrentQuery] = useState('');
   const [showRightPanel, setShowRightPanel] = useState(false);
-  const [cards, setCards] = useState<Array<{id: number, x: number, y: number, content: string, type?: string, width?: number, height?: number}>>([]);
+  const [cards, setCards] = useState<Array<{id: number, x: number, y: number, content: string, type?: string, width?: number, height?: number, url?: string}>>([]);
   const [cardId, setCardId] = useState(0);
   const [draggedCard, setDraggedCard] = useState<number | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -29,6 +29,9 @@ export default function Home() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [weatherData, setWeatherData] = useState<any>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; cardId: number } | null>(null);
+  const [showFavoriteModal, setShowFavoriteModal] = useState(false);
+  const [favoriteName, setFavoriteName] = useState('');
+  const [favoriteUrl, setFavoriteUrl] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const resultRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -50,6 +53,7 @@ export default function Home() {
 
     return (
       <div className="flex flex-col items-center justify-center h-full">
+
         <svg width={size * 0.8} height={size * 0.8} viewBox="0 0 200 200" className="drop-shadow-sm">
           <circle cx="100" cy="100" r="95" fill="none" stroke="white" strokeWidth="2"/>
           <circle cx="100" cy="100" r="2" fill="white"/>
@@ -239,15 +243,28 @@ export default function Home() {
     }
 
     if (canPlace) {
-      const widgetCount = cards.filter(card => card.type === selectedWidget).length + 1;
+      let content = '';
+      let url = '';
+
+      if (selectedWidget === 'favorite') {
+        content = favoriteName;
+        url = favoriteUrl;
+        setFavoriteName('');
+        setFavoriteUrl('');
+      } else {
+        const widgetCount = cards.filter(card => card.type === selectedWidget).length + 1;
+        content = `${selectedWidget.charAt(0).toUpperCase() + selectedWidget.slice(1)} ${widgetCount}`;
+      }
+
       const newCard = {
         id: cardId,
         x: snappedX,
         y: snappedY,
-        content: `${selectedWidget.charAt(0).toUpperCase() + selectedWidget.slice(1)} ${widgetCount}`,
+        content: content,
         type: selectedWidget,
         width: width,
-        height: height
+        height: height,
+        url: url
       };
       setCards(prev => [...prev, newCard]);
       setCardId(prev => prev + 1);
@@ -327,6 +344,20 @@ export default function Home() {
 
   const closeContextMenu = () => {
     setContextMenu(null);
+  };
+
+  const handleFavoriteSubmit = () => {
+    if (favoriteName.trim() && favoriteUrl.trim()) {
+      setSelectedWidget('favorite');
+      setPlacementMode(true);
+      setShowFavoriteModal(false);
+    }
+  };
+
+  const handleFavoriteCancel = () => {
+    setShowFavoriteModal(false);
+    setFavoriteName('');
+    setFavoriteUrl('');
   };
 
   useEffect(() => {
@@ -541,7 +572,7 @@ export default function Home() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div onClick={() => { setSelectedWidget('favorite'); setPlacementMode(true); setShowRightPanel(false); }} className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 hover:bg-gray-700/50 transition-colors cursor-pointer">
+                <div onClick={() => { setShowFavoriteModal(true); setShowRightPanel(false); }} className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 hover:bg-gray-700/50 transition-colors cursor-pointer">
                   <div className="text-center">
                     <h3 className="text-white font-semibold text-lg mb-2">Favorite</h3>
                     <div className="w-12 h-12 mx-auto bg-gray-700 rounded-full flex items-center justify-center">
@@ -604,6 +635,31 @@ export default function Home() {
               <div className="flex items-center justify-center h-full">
                 <Weather />
               </div>
+            ) : card.type === 'favorite' ? (
+              <div
+                className="flex flex-col items-center justify-center h-full cursor-pointer group"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (card.url) window.open(card.url, '_blank');
+                }}
+              >
+                <div className="text-white text-sm font-medium text-center mb-2">{card.content}</div>
+                <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center group-hover:bg-gray-600 transition-colors overflow-hidden">
+                  <img
+                    src={card.url ? `https://www.google.com/s2/favicons?domain=${new URL(card.url).hostname}&sz=32` : ''}
+                    alt=""
+                    className="w-6 h-6 object-contain"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      target.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                  <svg className="w-4 h-4 text-white hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </div>
+              </div>
             ) : (
               <div className="text-white text-sm font-medium">{card.content}</div>
             )}
@@ -629,6 +685,55 @@ export default function Home() {
             </svg>
             <span>Delete</span>
           </button>
+        </div>
+      )}
+
+      {showFavoriteModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gray-800/95 backdrop-blur-md border border-gray-600 rounded-xl shadow-2xl p-6 w-96 max-w-[90vw]">
+            <h2 className="text-white text-xl font-semibold mb-6 text-center">Add Favorite</h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-gray-300 text-sm font-medium mb-2">Name</label>
+                <input
+                  type="text"
+                  value={favoriteName}
+                  onChange={(e) => setFavoriteName(e.target.value)}
+                  placeholder="Enter favorite name"
+                  className="w-full px-3 py-2 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-300 text-sm font-medium mb-2">URL</label>
+                <input
+                  type="url"
+                  value={favoriteUrl}
+                  onChange={(e) => setFavoriteUrl(e.target.value)}
+                  placeholder="https://example.com"
+                  className="w-full px-3 py-2 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={handleFavoriteCancel}
+                className="flex-1 px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleFavoriteSubmit}
+                disabled={!favoriteName.trim() || !favoriteUrl.trim()}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
+              >
+                Add Favorite
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
