@@ -541,9 +541,9 @@ export default function Home() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div onClick={() => { setSelectedWidget('wordle'); setPlacementMode(true); setShowRightPanel(false); }} className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 hover:bg-gray-700/50 transition-colors cursor-pointer">
+                <div onClick={() => { setSelectedWidget('favorite'); setPlacementMode(true); setShowRightPanel(false); }} className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 hover:bg-gray-700/50 transition-colors cursor-pointer">
                   <div className="text-center">
-                    <h3 className="text-white font-semibold text-lg mb-2">Wordle</h3>
+                    <h3 className="text-white font-semibold text-lg mb-2">Favorite</h3>
                     <div className="w-12 h-12 mx-auto bg-gray-700 rounded-full flex items-center justify-center">
                       <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" />
