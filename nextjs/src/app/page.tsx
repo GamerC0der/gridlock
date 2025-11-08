@@ -18,11 +18,14 @@ export default function Home() {
   const [selectedResult, setSelectedResult] = useState(-1);
   const [currentQuery, setCurrentQuery] = useState('');
   const [showRightPanel, setShowRightPanel] = useState(false);
-  const [cards, setCards] = useState<Array<{id: number, x: number, y: number, content: string}>>([]);
+  const [cards, setCards] = useState<Array<{id: number, x: number, y: number, content: string, type?: string, width?: number, height?: number}>>([]);
   const [cardId, setCardId] = useState(0);
   const [draggedCard, setDraggedCard] = useState<number | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [dragPreview, setDragPreview] = useState<{ x: number, y: number } | null>(null);
+  const [placementPreview, setPlacementPreview] = useState<{ x: number, y: number } | null>(null);
+  const [selectedWidget, setSelectedWidget] = useState<string | null>(null);
+  const [placementMode, setPlacementMode] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -86,7 +89,7 @@ export default function Home() {
   };
 
   const handleGridClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (draggedCard !== null || e.target !== e.currentTarget) return;
+    if (draggedCard !== null || e.target !== e.currentTarget || !placementMode || !selectedWidget) return;
 
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -95,16 +98,54 @@ export default function Home() {
     const snappedX = Math.floor(x / 160) * 160;
     const snappedY = Math.floor(y / 160) * 160;
 
-    const existingCard = cards.find(card => card.x === snappedX && card.y === snappedY);
-    if (!existingCard) {
+    // Check if placement is valid based on widget type
+    let canPlace = false;
+    let width = 1;
+    let height = 1;
+
+    if (selectedWidget === 'weather') {
+      // Weather takes 2x2 grid spaces
+      width = 2;
+      height = 2;
+      // Check if all 4 positions are free
+      canPlace = true;
+      for (let dx = 0; dx < width; dx++) {
+        for (let dy = 0; dy < height; dy++) {
+          const checkX = snappedX + (dx * 160);
+          const checkY = snappedY + (dy * 160);
+          const existingCard = cards.find(card =>
+            checkX >= card.x && checkX < card.x + (card.width || 1) * 160 &&
+            checkY >= card.y && checkY < card.y + (card.height || 1) * 160
+          );
+          if (existingCard) {
+            canPlace = false;
+            break;
+          }
+        }
+        if (!canPlace) break;
+      }
+    } else {
+      // Clock and Wordle take 1x1
+      const existingCard = cards.find(card => card.x === snappedX && card.y === snappedY);
+      canPlace = !existingCard;
+    }
+
+    if (canPlace) {
+      const widgetCount = cards.filter(card => card.type === selectedWidget).length + 1;
       const newCard = {
         id: cardId,
         x: snappedX,
         y: snappedY,
-        content: `Card ${cardId + 1}`
+        content: `${selectedWidget.charAt(0).toUpperCase() + selectedWidget.slice(1)} ${widgetCount}`,
+        type: selectedWidget,
+        width: width,
+        height: height
       };
       setCards(prev => [...prev, newCard]);
       setCardId(prev => prev + 1);
+      setPlacementMode(false);
+      setSelectedWidget(null);
+      setPlacementPreview(null);
     }
   };
 
@@ -123,19 +164,29 @@ export default function Home() {
       setDragPreview({ x: card.x, y: card.y });
     }
     setDraggedCard(cardId);
+    setPlacementPreview(null);
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (draggedCard === null) return;
+    if (draggedCard !== null) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left - dragOffset.x;
+      const y = e.clientY - rect.top - dragOffset.y;
 
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left - dragOffset.x;
-    const y = e.clientY - rect.top - dragOffset.y;
+      const snappedX = Math.round(x / 160) * 160;
+      const snappedY = Math.round(y / 160) * 160;
 
-    const snappedX = Math.round(x / 160) * 160;
-    const snappedY = Math.round(y / 160) * 160;
+      setDragPreview({ x: snappedX, y: snappedY });
+    } else if (placementMode && selectedWidget) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
 
-    setDragPreview({ x: snappedX, y: snappedY });
+      const snappedX = Math.floor(x / 160) * 160;
+      const snappedY = Math.floor(y / 160) * 160;
+
+      setPlacementPreview({ x: snappedX, y: snappedY });
+    }
   };
 
   const handleMouseUp = () => {
@@ -148,6 +199,7 @@ export default function Home() {
     }
     setDraggedCard(null);
     setDragPreview(null);
+    setPlacementPreview(null);
   };
 
   useEffect(() => {
@@ -165,6 +217,7 @@ export default function Home() {
       onClick={handleGridClick}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
+      onMouseLeave={() => setPlacementPreview(null)}
     >
       <button
         onClick={() => setShowRightPanel(!showRightPanel)}
@@ -311,7 +364,7 @@ export default function Home() {
 
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div onClick={() => setShowRightPanel(false)} className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 hover:bg-gray-700/50 transition-colors cursor-pointer">
+                <div onClick={() => { setSelectedWidget('clock'); setPlacementMode(true); setShowRightPanel(false); }} className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 hover:bg-gray-700/50 transition-colors cursor-pointer">
                   <div className="text-center">
                     <h3 className="text-white font-semibold text-lg mb-2">Clock</h3>
                     <div className="w-12 h-12 mx-auto bg-gray-700 rounded-full flex items-center justify-center">
@@ -322,7 +375,7 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
-                <div onClick={() => setShowRightPanel(false)} className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 hover:bg-gray-700/50 transition-colors cursor-pointer">
+                <div onClick={() => { setSelectedWidget('weather'); setPlacementMode(true); setShowRightPanel(false); }} className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 hover:bg-gray-700/50 transition-colors cursor-pointer">
                   <div className="text-center">
                     <h3 className="text-white font-semibold text-lg mb-2">Weather</h3>
                     <div className="w-12 h-12 mx-auto bg-gray-700 rounded-full flex items-center justify-center">
@@ -335,7 +388,7 @@ export default function Home() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div onClick={() => setShowRightPanel(false)} className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 hover:bg-gray-700/50 transition-colors cursor-pointer">
+                <div onClick={() => { setSelectedWidget('wordle'); setPlacementMode(true); setShowRightPanel(false); }} className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 hover:bg-gray-700/50 transition-colors cursor-pointer">
                   <div className="text-center">
                     <h3 className="text-white font-semibold text-lg mb-2">Wordle</h3>
                     <div className="w-12 h-12 mx-auto bg-gray-700 rounded-full flex items-center justify-center">
@@ -351,9 +404,28 @@ export default function Home() {
         </div>
       )}
 
+      {placementPreview && placementMode && selectedWidget && (
+        <div
+          className="absolute bg-blue-500/20 border-2 border-blue-400 border-dashed rounded-lg pointer-events-none"
+          style={{
+            left: placementPreview.x,
+            top: placementPreview.y,
+            width: `${(selectedWidget === 'weather' ? 2 : 1) * 160 - 20}px`,
+            height: `${(selectedWidget === 'weather' ? 2 : 1) * 160 - 20}px`,
+            zIndex: 5
+          }}
+        >
+          <div className="w-full h-full flex items-center justify-center text-blue-300 text-sm font-medium opacity-70">
+            {selectedWidget.charAt(0).toUpperCase() + selectedWidget.slice(1)}
+          </div>
+        </div>
+      )}
+
       {cards.map(card => {
         const isDragging = draggedCard === card.id;
         const position = isDragging && dragPreview ? dragPreview : { x: card.x, y: card.y };
+        const cardWidth = (card.width || 1) * 160 - 20; // 160px per grid minus 20px for visual spacing
+        const cardHeight = (card.height || 1) * 160 - 20;
 
         return (
           <div
@@ -364,8 +436,8 @@ export default function Home() {
             style={{
               left: position.x,
               top: position.y,
-              width: '140px',
-              height: '140px',
+              width: `${cardWidth}px`,
+              height: `${cardHeight}px`,
               zIndex: isDragging ? 50 : 10
             }}
             onMouseDown={(e) => handleCardMouseDown(e, card.id)}
