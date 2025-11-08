@@ -144,6 +144,40 @@ export default function Home() {
     );
   });
 
+  const Note = memo(({ cardId }: { cardId: number }) => {
+    const [noteText, setNoteText] = useState('');
+
+    useEffect(() => {
+      const saved = localStorage.getItem(`gridlock-note-${cardId}`);
+      if (saved) {
+        setNoteText(saved);
+      }
+    }, [cardId]);
+
+    const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const newText = e.target.value;
+      setNoteText(newText);
+      localStorage.setItem(`gridlock-note-${cardId}`, newText);
+    };
+
+    const handleMouseDown = (e: React.MouseEvent<HTMLTextAreaElement>) => {
+      e.stopPropagation();
+    };
+
+    return (
+      <div className="h-full flex flex-col">
+        <textarea
+          value={noteText}
+          onChange={handleTextChange}
+          onMouseDown={handleMouseDown}
+          placeholder="Type your note here..."
+          className="w-full h-full bg-transparent text-white text-sm resize-none focus:outline-none placeholder-gray-500 p-2"
+          style={{ minHeight: '60px' }}
+        />
+      </div>
+    );
+  });
+
   const performSearch = async (query: string) => {
     setIsLoading(true);
     setError(null);
@@ -572,6 +606,16 @@ export default function Home() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
+                <div onClick={() => { setSelectedWidget('note'); setPlacementMode(true); setShowRightPanel(false); }} className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 hover:bg-gray-700/50 transition-colors cursor-pointer">
+                  <div className="text-center">
+                    <h3 className="text-white font-semibold text-lg mb-2">Note</h3>
+                    <div className="w-12 h-12 mx-auto bg-gray-700 rounded-full flex items-center justify-center">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
                 <div onClick={() => { setShowFavoriteModal(true); setShowRightPanel(false); }} className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 hover:bg-gray-700/50 transition-colors cursor-pointer">
                   <div className="text-center">
                     <h3 className="text-white font-semibold text-lg mb-2">Favorite</h3>
@@ -608,7 +652,7 @@ export default function Home() {
       {cards.map(card => {
         const isDragging = draggedCard === card.id;
         const position = isDragging && dragPreview ? dragPreview : { x: card.x, y: card.y };
-        const cardWidth = (card.width || 1) * 160 - 20; // 160px per grid minus 20px for visual spacing
+        const cardWidth = (card.width || 1) * 160 - 20;
         const cardHeight = (card.height || 1) * 160 - 20;
 
         return (
@@ -634,6 +678,10 @@ export default function Home() {
             ) : card.type === 'weather' ? (
               <div className="flex items-center justify-center h-full">
                 <Weather />
+              </div>
+            ) : card.type === 'note' ? (
+              <div className="h-full p-1">
+                <Note cardId={card.id} />
               </div>
             ) : card.type === 'favorite' ? (
               <div
