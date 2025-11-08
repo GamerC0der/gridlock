@@ -1,7 +1,7 @@
 "use client";
 
 import { Sixtyfour } from "next/font/google";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, memo } from "react";
 
 const sixtyfour = Sixtyfour({
   subsets: ["latin"],
@@ -27,6 +27,7 @@ export default function Home() {
   const [selectedWidget, setSelectedWidget] = useState<string | null>(null);
   const [placementMode, setPlacementMode] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [weatherData, setWeatherData] = useState<any>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -105,6 +106,30 @@ export default function Home() {
       </div>
     );
   };
+
+  const Weather = memo(({ size = 120 }: { size?: number }) => {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-white">
+        {weatherData ? (
+          <div className="text-center">
+            <div className="text-2xl font-bold mb-1">
+              {weatherData.weather.temperature}°F
+            </div>
+            <div className="text-sm font-medium mb-1">
+              {weatherData.location.city}, {weatherData.location.country}
+            </div>
+            <div className="text-xs text-gray-300 leading-tight">
+              {weatherData.weather.description}
+            </div>
+          </div>
+        ) : (
+          <div className="text-center">
+            <div className="text-gray-400 text-xs">-</div>
+          </div>
+        )}
+      </div>
+    );
+  });
 
   const performSearch = async (query: string) => {
     setIsLoading(true);
@@ -280,6 +305,25 @@ export default function Home() {
       setCurrentTime(new Date());
     }, 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    fetch('https://api.ipify.org?format=json')
+      .then(res => res.json())
+      .then(data =>
+        fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/weather?ip=${encodeURIComponent(data.ip)}`)
+          .then(res => res.json())
+          .then(data => {
+            if (!data.error) setWeatherData(data);
+          })
+      )
+      .catch(() =>
+        fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/weather?ip=127.0.0.1`)
+          .then(res => res.json())
+          .then(data => {
+            if (!data.error) setWeatherData(data);
+          })
+      );
   }, []);
 
   useEffect(() => {
@@ -525,6 +569,10 @@ export default function Home() {
             {card.type === 'clock' ? (
               <div className="flex items-center justify-center h-full">
                 <Clock size={Math.min(cardWidth - 16, cardHeight - 16)} />
+              </div>
+            ) : card.type === 'weather' ? (
+              <div className="flex items-center justify-center h-full">
+                <Weather />
               </div>
             ) : (
               <div className="text-white text-sm font-medium">{card.content}</div>
