@@ -429,6 +429,22 @@ export default function Home() {
     }
   }, [selectedResult]);
 
+  useEffect(() => {
+    const savedCards = localStorage.getItem('gridlock-cards');
+    const savedCardId = localStorage.getItem('gridlock-cardId');
+    if (savedCards) {
+      setCards(JSON.parse(savedCards));
+    }
+    if (savedCardId) {
+      setCardId(parseInt(savedCardId, 10));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('gridlock-cards', JSON.stringify(cards));
+    localStorage.setItem('gridlock-cardId', cardId.toString());
+  }, [cards, cardId]);
+
   return (
     <div
       className={`min-h-screen bg-black custom-grid-bg ${showResults ? '' : 'flex items-center justify-center flex-col'}`}
