@@ -28,6 +28,7 @@ export default function Home() {
   const [placementMode, setPlacementMode] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [weatherData, setWeatherData] = useState<any>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; cardId: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -189,6 +190,7 @@ export default function Home() {
     setIsVisible(true);
     setInputWidth('w-[600px]');
     setSearchResults([]);
+    
     setError(null);
     setSelectedResult(-1);
     setCurrentQuery('');
@@ -308,6 +310,25 @@ export default function Home() {
     setPlacementPreview(null);
   };
 
+  const handleCardContextMenu = (e: React.MouseEvent<HTMLDivElement>, cardId: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      cardId
+    });
+  };
+
+  const deleteCard = (cardId: number) => {
+    setCards(prev => prev.filter(card => card.id !== cardId));
+    setContextMenu(null);
+  };
+
+  const closeContextMenu = () => {
+    setContextMenu(null);
+  };
+
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -346,7 +367,7 @@ export default function Home() {
   return (
     <div
       className={`min-h-screen bg-black custom-grid-bg ${showResults ? '' : 'flex items-center justify-center flex-col'}`}
-      onClick={handleGridClick}
+      onClick={(e) => { handleGridClick(e); closeContextMenu(); }}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={() => setPlacementPreview(null)}
@@ -573,6 +594,7 @@ export default function Home() {
               zIndex: isDragging ? 50 : 10
             }}
             onMouseDown={(e) => handleCardMouseDown(e, card.id)}
+            onContextMenu={(e) => handleCardContextMenu(e, card.id)}
           >
             {card.type === 'clock' ? (
               <div className="flex items-center justify-center h-full">
@@ -588,6 +610,27 @@ export default function Home() {
           </div>
         );
       })}
+
+      {contextMenu && (
+        <div
+          className="fixed bg-gray-800/95 backdrop-blur-md border border-gray-600 rounded-lg shadow-xl z-50"
+          style={{
+            left: contextMenu.x,
+            top: contextMenu.y,
+            minWidth: '120px'
+          }}
+        >
+          <button
+            onClick={() => deleteCard(contextMenu.cardId)}
+            className="w-full px-4 py-2 text-left text-red-400 hover:bg-gray-700/50 transition-colors flex items-center space-x-2 text-sm"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            <span>Delete</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
