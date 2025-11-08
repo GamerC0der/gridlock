@@ -26,8 +26,85 @@ export default function Home() {
   const [placementPreview, setPlacementPreview] = useState<{ x: number, y: number } | null>(null);
   const [selectedWidget, setSelectedWidget] = useState<string | null>(null);
   const [placementMode, setPlacementMode] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
   const inputRef = useRef<HTMLInputElement>(null);
   const resultRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const Clock = ({ size = 120 }: { size?: number }) => {
+    const hours = currentTime.getHours() % 12;
+    const minutes = currentTime.getMinutes();
+    const seconds = currentTime.getSeconds();
+
+    const hourAngle = (hours * 30) + (minutes * 0.5);
+    const minuteAngle = minutes * 6;
+    const secondAngle = seconds * 6;
+
+    const timeString = currentTime.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
+
+    return (
+      <div className="flex flex-col items-center justify-center h-full">
+        <svg width={size * 0.8} height={size * 0.8} viewBox="0 0 200 200" className="drop-shadow-sm">
+          <circle cx="100" cy="100" r="95" fill="none" stroke="white" strokeWidth="2"/>
+          <circle cx="100" cy="100" r="2" fill="white"/>
+          {[...Array(12)].map((_, i) => {
+            const angle = (i * 30) - 90;
+            const radian = (angle * Math.PI) / 180;
+            const x1 = 100 + 80 * Math.cos(radian);
+            const y1 = 100 + 80 * Math.sin(radian);
+            const x2 = 100 + 90 * Math.cos(radian);
+            const y2 = 100 + 90 * Math.sin(radian);
+            return (
+              <line
+                key={i}
+                x1={x1}
+                y1={y1}
+                x2={x2}
+                y2={y2}
+                stroke="white"
+                strokeWidth="2"
+              />
+            );
+          })}
+          <line
+            x1="100"
+            y1="100"
+            x2={100 + 50 * Math.cos((hourAngle - 90) * Math.PI / 180)}
+            y2={100 + 50 * Math.sin((hourAngle - 90) * Math.PI / 180)}
+            stroke="white"
+            strokeWidth="4"
+            strokeLinecap="round"
+          />
+          <line
+            x1="100"
+            y1="100"
+            x2={100 + 70 * Math.cos((minuteAngle - 90) * Math.PI / 180)}
+            y2={100 + 70 * Math.sin((minuteAngle - 90) * Math.PI / 180)}
+            stroke="white"
+            strokeWidth="3"
+            strokeLinecap="round"
+          />
+          <line
+            x1="100"
+            y1="100"
+            x2={100 + 80 * Math.cos((secondAngle - 90) * Math.PI / 180)}
+            y2={100 + 80 * Math.sin((secondAngle - 90) * Math.PI / 180)}
+            stroke="#ff4444"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <circle cx="100" cy="100" r="3" fill="white"/>
+        </svg>
+        <div className="text-white text-sm font-mono mt-1 font-semibold">
+          {timeString}
+        </div>
+      </div>
+    );
+  };
 
   const performSearch = async (query: string) => {
     setIsLoading(true);
@@ -98,16 +175,13 @@ export default function Home() {
     const snappedX = Math.floor(x / 160) * 160;
     const snappedY = Math.floor(y / 160) * 160;
 
-    // Check if placement is valid based on widget type
     let canPlace = false;
     let width = 1;
     let height = 1;
 
     if (selectedWidget === 'weather') {
-      // Weather takes 2x2 grid spaces
       width = 2;
       height = 2;
-      // Check if all 4 positions are free
       canPlace = true;
       for (let dx = 0; dx < width; dx++) {
         for (let dy = 0; dy < height; dy++) {
@@ -125,7 +199,6 @@ export default function Home() {
         if (!canPlace) break;
       }
     } else {
-      // Clock and Wordle take 1x1
       const existingCard = cards.find(card => card.x === snappedX && card.y === snappedY);
       canPlace = !existingCard;
     }
@@ -201,6 +274,13 @@ export default function Home() {
     setDragPreview(null);
     setPlacementPreview(null);
   };
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (selectedResult >= 0 && resultRefs.current[selectedResult]) {
@@ -442,7 +522,13 @@ export default function Home() {
             }}
             onMouseDown={(e) => handleCardMouseDown(e, card.id)}
           >
-            <div className="text-white text-sm font-medium">{card.content}</div>
+            {card.type === 'clock' ? (
+              <div className="flex items-center justify-center h-full">
+                <Clock size={Math.min(cardWidth - 16, cardHeight - 16)} />
+              </div>
+            ) : (
+              <div className="text-white text-sm font-medium">{card.content}</div>
+            )}
           </div>
         );
       })}
