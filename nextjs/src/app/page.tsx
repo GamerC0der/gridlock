@@ -113,13 +113,21 @@ export default function Home() {
         {weatherData ? (
           <div className="text-center">
             <div className="text-2xl font-bold mb-1">
-              {weatherData.weather.temperature}°F
+              {weatherData.weather.temperature + 10}°F
             </div>
             <div className="text-sm font-medium mb-1">
               {weatherData.location.city}, {weatherData.location.country}
             </div>
             <div className="text-xs text-gray-300 leading-tight">
-              {weatherData.weather.description}
+              {(() => {
+                const desc = weatherData.weather.description;
+                const periodIndex = desc.indexOf('.');
+                if (periodIndex !== -1) {
+                  return desc.substring(0, periodIndex + 1);
+                }
+                const words = desc.split(' ');
+                return words.slice(0, 3).join(' ') + (words.length > 3 ? '...' : '');
+              })()}
             </div>
           </div>
         ) : (
@@ -206,7 +214,7 @@ export default function Home() {
 
     if (selectedWidget === 'weather') {
       width = 2;
-      height = 2;
+      height = 1;
       canPlace = true;
       for (let dx = 0; dx < width; dx++) {
         for (let dy = 0; dy < height; dy++) {
@@ -535,7 +543,7 @@ export default function Home() {
             left: placementPreview.x,
             top: placementPreview.y,
             width: `${(selectedWidget === 'weather' ? 2 : 1) * 160 - 20}px`,
-            height: `${(selectedWidget === 'weather' ? 2 : 1) * 160 - 20}px`,
+            height: `${(selectedWidget === 'weather' ? 1 : 1) * 160 - 20}px`,
             zIndex: 5
           }}
         >
