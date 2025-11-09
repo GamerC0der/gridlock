@@ -903,7 +903,10 @@ export default function Home() {
     >
       <div className="fixed left-8 top-1/2 transform -translate-y-1/2 flex flex-col space-y-3 z-10">
         <button
-          onClick={() => setShowRightPanel(!showRightPanel)}
+          onClick={() => {
+            setShowRightPanel(!showRightPanel);
+            setDeleteMode(false);
+          }}
           className="w-12 h-12 bg-gray-700 dark:bg-gray-700 rounded-full flex items-center justify-center transition-all duration-200 hover:bg-gray-600 dark:hover:bg-gray-600"
         >
           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
