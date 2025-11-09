@@ -462,7 +462,7 @@ export default function Home() {
 
   return (
     <div
-      className={`min-h-screen bg-black custom-grid-bg ${showResults ? '' : 'flex items-center justify-center flex-col'}`}
+      className={`min-h-screen bg-background custom-grid-bg ${showResults ? '' : 'flex items-center justify-center flex-col'}`}
       onClick={(e) => { handleGridClick(e); closeContextMenu(); }}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
@@ -471,7 +471,7 @@ export default function Home() {
       <div className="fixed left-8 top-1/2 transform -translate-y-1/2 flex flex-col space-y-3 z-10">
         <button
           onClick={() => setShowRightPanel(!showRightPanel)}
-          className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center transition-all duration-200"
+          className="w-12 h-12 bg-gray-700 dark:bg-gray-700 rounded-full flex items-center justify-center transition-all duration-200 hover:bg-gray-600 dark:hover:bg-gray-600"
         >
           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -479,7 +479,7 @@ export default function Home() {
         </button>
         <button
           onClick={() => setShowSettingsModal(true)}
-          className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center transition-all duration-200 hover:bg-gray-600"
+          className="w-12 h-12 bg-gray-700 dark:bg-gray-700 rounded-full flex items-center justify-center transition-all duration-200 hover:bg-gray-600 dark:hover:bg-gray-600"
         >
           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -500,7 +500,7 @@ export default function Home() {
               type="search"
               placeholder="Ask or Search"
               onKeyDown={handleKeyDown}
-              className="w-full pl-12 pr-12 py-3 bg-gray-800 text-white border border-gray-600 rounded-full shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow placeholder-gray-400"
+              className="w-full pl-12 pr-12 py-3 bg-gray-800 dark:bg-gray-800 text-white border border-gray-600 rounded-full shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow placeholder-gray-400 dark:placeholder-gray-400"
               defaultValue={currentQuery}
             />
             <button
@@ -516,7 +516,7 @@ export default function Home() {
       )}
 
       <div className={`flex items-center justify-center flex-col ${showResults ? 'mt-8' : ''}`}>
-        {isVisible && <h1 className={`${sixtyfour.className} text-white text-7xl font-bold mb-8`}>GridLock</h1>}
+        {isVisible && <h1 className={`${sixtyfour.className} text-foreground text-7xl font-bold mb-8`}>GridLock</h1>}
 
         {showResults ? (
           <div className="w-full max-w-4xl space-y-4">
@@ -598,14 +598,14 @@ export default function Home() {
               type="search"
               placeholder="Ask or Search"
               onKeyDown={handleKeyDown}
-              className="w-full pl-12 pr-4 py-3 bg-gray-800 text-white border border-gray-600 rounded-full shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow placeholder-gray-400"
+              className="w-full pl-12 pr-4 py-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-full shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow placeholder-gray-500 dark:placeholder-gray-400"
             />
           </div>
         )}
       </div>
 
       {showRightPanel && (
-        <div className="fixed left-24 top-1/2 transform -translate-y-1/2 w-80 bg-gray-900/95 backdrop-blur-md border border-gray-700/50 rounded-xl shadow-2xl z-20">
+        <div className="fixed left-24 top-1/2 transform -translate-y-1/2 w-80 bg-gray-900/95 dark:bg-gray-900/95 backdrop-blur-md border border-gray-700/50 rounded-xl shadow-2xl z-20">
           <div className="p-6">
             <div className="relative mb-6">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -616,7 +616,7 @@ export default function Home() {
               <input
                 type="search"
                 placeholder="Search widgets..."
-                className="w-full pl-10 pr-4 py-2 bg-gray-800 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow placeholder-gray-400"
+                className="w-full pl-10 pr-4 py-2 bg-gray-800 dark:bg-gray-800 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow placeholder-gray-400 dark:placeholder-gray-400"
               />
             </div>
 
@@ -757,7 +757,7 @@ export default function Home() {
 
       {contextMenu && (
         <div
-          className="fixed bg-gray-800/95 backdrop-blur-md border border-gray-600 rounded-lg shadow-xl z-50"
+          className="fixed bg-gray-800/95 dark:bg-gray-800/95 backdrop-blur-md border border-gray-600 rounded-lg shadow-xl z-50"
           style={{
             left: contextMenu.x,
             top: contextMenu.y,
@@ -777,8 +777,8 @@ export default function Home() {
       )}
 
       {showFavoriteModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gray-800/95 backdrop-blur-md border border-gray-600 rounded-xl shadow-2xl p-6 w-96 max-w-[90vw]">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gray-800/95 dark:bg-gray-800/95 backdrop-blur-md border border-gray-600 rounded-xl shadow-2xl p-6 w-96 max-w-[90vw]">
             <h2 className="text-white text-xl font-semibold mb-6 text-center">Add Favorite</h2>
 
             <div className="space-y-4">
@@ -789,7 +789,7 @@ export default function Home() {
                   value={favoriteName}
                   onChange={(e) => setFavoriteName(e.target.value)}
                   placeholder="Enter favorite name"
-                  className="w-full px-3 py-2 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 bg-gray-700 dark:bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   autoFocus
                 />
               </div>
@@ -801,7 +801,7 @@ export default function Home() {
                   value={favoriteUrl}
                   onChange={(e) => setFavoriteUrl(e.target.value)}
                   placeholder="https://example.com"
-                  className="w-full px-3 py-2 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 bg-gray-700 dark:bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
@@ -826,8 +826,8 @@ export default function Home() {
       )}
 
       {showSettingsModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gray-800/95 backdrop-blur-md border border-gray-600 rounded-xl shadow-2xl p-6 w-96 max-w-[90vw]">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gray-800/95 dark:bg-gray-800/95 backdrop-blur-md border border-gray-600 rounded-xl shadow-2xl p-6 w-96 max-w-[90vw]">
             <h2 className="text-white text-xl font-semibold mb-6 text-center">Settings</h2>
 
             <div className="space-y-6">
