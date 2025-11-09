@@ -398,7 +398,26 @@ export default function Home() {
     let width = 1;
     let height = 1;
 
-    if (selectedWidget === 'weather') {
+      if (selectedWidget === 'weather') {
+      width = 2;
+      height = 1;
+      canPlace = true;
+      for (let dx = 0; dx < width; dx++) {
+        for (let dy = 0; dy < height; dy++) {
+          const checkX = snappedX + (dx * 160);
+          const checkY = snappedY + (dy * 160);
+          const existingCard = cards.find(card =>
+            checkX >= card.x && checkX < card.x + (card.width || 1) * 160 &&
+            checkY >= card.y && checkY < card.y + (card.height || 1) * 160
+          );
+          if (existingCard) {
+            canPlace = false;
+            break;
+          }
+        }
+        if (!canPlace) break;
+      }
+    } else if (selectedWidget === 'quote') {
       width = 2;
       height = 1;
       canPlace = true;
@@ -921,8 +940,8 @@ export default function Home() {
           style={{
             left: placementPreview.x,
             top: placementPreview.y,
-            width: `${(selectedWidget === 'weather' ? 2 : selectedWidget === 'iframe' ? 2 : 1) * 160 - 20}px`,
-            height: `${(selectedWidget === 'weather' ? 1 : selectedWidget === 'iframe' ? 2 : 1) * 160 - 20}px`,
+            width: `${((selectedWidget === 'weather' || selectedWidget === 'quote') ? 2 : selectedWidget === 'iframe' ? 2 : 1) * 160 - 20}px`,
+            height: `${(selectedWidget === 'weather' ? 1 : selectedWidget === 'quote' ? 1 : selectedWidget === 'iframe' ? 2 : 1) * 160 - 20}px`,
             zIndex: 5
           }}
         >
