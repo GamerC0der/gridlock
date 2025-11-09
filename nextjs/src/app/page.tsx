@@ -32,6 +32,8 @@ export default function Home() {
   const [showFavoriteModal, setShowFavoriteModal] = useState(false);
   const [favoriteName, setFavoriteName] = useState('');
   const [favoriteUrl, setFavoriteUrl] = useState('');
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [searchResultsCount, setSearchResultsCount] = useState(9);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -456,14 +458,25 @@ export default function Home() {
       onMouseUp={handleMouseUp}
       onMouseLeave={() => setPlacementPreview(null)}
     >
-      <button
-        onClick={() => setShowRightPanel(!showRightPanel)}
-        className="fixed left-8 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center transition-all duration-200 z-10"
-      >
-        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-        </svg>
-      </button>
+      <div className="fixed left-8 top-1/2 transform -translate-y-1/2 flex flex-col space-y-3 z-10">
+        <button
+          onClick={() => setShowRightPanel(!showRightPanel)}
+          className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center transition-all duration-200"
+        >
+          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+        </button>
+        <button
+          onClick={() => setShowSettingsModal(true)}
+          className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center transition-all duration-200 hover:bg-gray-600"
+        >
+          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </button>
+      </div>
       {showResults && (
         <div className="pt-8 pb-4 flex justify-center">
           <div className={`relative ${inputWidth} max-w-2xl`}>
@@ -517,8 +530,8 @@ export default function Home() {
 
             {!isLoading && !error && searchResults.length > 0 && (
               <>
-                <div className="grid grid-cols-3 gap-4 max-w-4xl">
-                  {searchResults.slice(0, 9).map((result, index) => (
+                <div className="grid grid-cols-2 gap-4 max-w-2xl">
+                  {searchResults.slice(0, searchResultsCount).map((result, index) => (
                   <div
                     key={index}
                     ref={el => { resultRefs.current[index] = el; }}
@@ -794,6 +807,51 @@ export default function Home() {
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
               >
                 Add Favorite
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSettingsModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gray-800/95 backdrop-blur-md border border-gray-600 rounded-xl shadow-2xl p-6 w-96 max-w-[90vw]">
+            <h2 className="text-white text-xl font-semibold mb-6 text-center">Settings</h2>
+
+            <div className="space-y-6">
+              <div>
+                <label className="block text-gray-300 text-sm font-medium mb-3">Search Results</label>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => setSearchResultsCount(4)}
+                    className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
+                      searchResultsCount === 4
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    4
+                  </button>
+                  <button
+                    onClick={() => setSearchResultsCount(9)}
+                    className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
+                      searchResultsCount === 9
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    9
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={() => setShowSettingsModal(false)}
+                className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                Close
               </button>
             </div>
           </div>
