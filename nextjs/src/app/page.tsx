@@ -59,6 +59,8 @@ export default function Home() {
   const [temperatureUnit, setTemperatureUnit] = useState<'C' | 'F'>('F');
   const [widgetSearchTerm, setWidgetSearchTerm] = useState('');
   const [aiSummary, setAiSummary] = useState('');
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -334,6 +336,13 @@ export default function Home() {
   });
 
   const performSearch = async (query: string) => {
+    const trimmedQuery = query.trim();
+    if (trimmedQuery && !searchHistory.includes(trimmedQuery)) {
+      const newHistory = [trimmedQuery, ...searchHistory.slice(0, 9)];
+      setSearchHistory(newHistory);
+      localStorage.setItem('gridlock-search-history', JSON.stringify(newHistory));
+    }
+
     setIsLoading(true);
     setError(null);
     setAiSummary('');
@@ -722,6 +731,13 @@ export default function Home() {
   }, [cards, cardId]);
 
   useEffect(() => {
+    const savedHistory = localStorage.getItem('gridlock-search-history');
+    if (savedHistory) {
+      setSearchHistory(JSON.parse(savedHistory));
+    }
+  }, []);
+
+  useEffect(() => {
     const savedAccentColor = localStorage.getItem('gridlock-accent-color');
     if (savedAccentColor) {
       setAccentColor(savedAccentColor);
@@ -899,8 +915,49 @@ export default function Home() {
               type="search"
               placeholder="Ask or Search"
               onKeyDown={handleKeyDown}
+              onFocus={() => setShowHistory(true)}
+              onBlur={() => setTimeout(() => setShowHistory(false), 150)}
               className="w-full pl-12 pr-4 py-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-full shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow placeholder-gray-500 dark:placeholder-gray-400"
             />
+
+            {showHistory && searchHistory.length > 0 && (
+              <div className="absolute top-full mt-2 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
+                <div className="p-2">
+                  <div className="flex items-center justify-between mb-2 pb-2 border-b border-gray-200 dark:border-gray-600">
+                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Recent Searches</span>
+                    <button
+                      onClick={() => {
+                        setSearchHistory([]);
+                        localStorage.removeItem('gridlock-search-history');
+                      }}
+                      className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  {searchHistory.map((query, index) => (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        if (inputRef.current) {
+                          inputRef.current.value = query;
+                        }
+                        performSearch(query);
+                        setShowHistory(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+                    >
+                      <div className="flex items-center">
+                        <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {query}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
