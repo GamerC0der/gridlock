@@ -56,6 +56,7 @@ export default function Home() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [searchResultsCount, setSearchResultsCount] = useState(9);
   const [accentColor, setAccentColor] = useState('#3b82f6');
+  const [widgetSearchTerm, setWidgetSearchTerm] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const resultRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -801,80 +802,114 @@ export default function Home() {
               <input
                 type="search"
                 placeholder="Search widgets..."
+                value={widgetSearchTerm}
+                onChange={(e) => setWidgetSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 bg-gray-800 dark:bg-gray-800 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow placeholder-gray-400 dark:placeholder-gray-400"
               />
             </div>
 
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div onClick={() => { setSelectedWidget('clock'); setPlacementMode(true); setShowRightPanel(false); }} className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 hover:bg-gray-700/50 transition-colors cursor-pointer">
-                  <div className="text-center">
-                    <h3 className="text-white font-semibold text-lg mb-2">Clock</h3>
-                    <div className="w-12 h-12 mx-auto bg-gray-700 rounded-full flex items-center justify-center">
+              {(() => {
+                const allWidgets = [
+                  {
+                    id: 'clock',
+                    name: 'Clock',
+                    icon: (
                       <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <circle cx="12" cy="12" r="10"></circle>
                         <polyline points="12,6 12,12 16,14"></polyline>
                       </svg>
-                    </div>
-                  </div>
-                </div>
-                <div onClick={() => { setSelectedWidget('weather'); setPlacementMode(true); setShowRightPanel(false); }} className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 hover:bg-gray-700/50 transition-colors cursor-pointer">
-                  <div className="text-center">
-                    <h3 className="text-white font-semibold text-lg mb-2">Weather</h3>
-                    <div className="w-12 h-12 mx-auto bg-gray-700 rounded-full flex items-center justify-center">
+                    ),
+                    onClick: () => { setSelectedWidget('clock'); setPlacementMode(true); setShowRightPanel(false); setWidgetSearchTerm(''); }
+                  },
+                  {
+                    id: 'weather',
+                    name: 'Weather',
+                    icon: (
                       <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.9 5.002 5.002 0 00-9.8 1.1A4 4 0 003 15z" />
                       </svg>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div onClick={() => { setSelectedWidget('quote'); setPlacementMode(true); setShowRightPanel(false); }} className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 hover:bg-gray-700/50 transition-colors cursor-pointer">
-                  <div className="text-center">
-                    <h3 className="text-white font-semibold text-lg mb-2">Quote</h3>
-                    <div className="w-12 h-12 mx-auto bg-gray-700 rounded-full flex items-center justify-center">
+                    ),
+                    onClick: () => { setSelectedWidget('weather'); setPlacementMode(true); setShowRightPanel(false); setWidgetSearchTerm(''); }
+                  },
+                  {
+                    id: 'quote',
+                    name: 'Quote',
+                    icon: (
                       <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                       </svg>
-                    </div>
-                  </div>
-                </div>
-                <div onClick={() => { setShowIframeModal(true); setShowRightPanel(false); }} className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 hover:bg-gray-700/50 transition-colors cursor-pointer">
-                  <div className="text-center">
-                    <h3 className="text-white font-semibold text-lg mb-2">Iframe</h3>
-                    <div className="w-12 h-12 mx-auto bg-gray-700 rounded-full flex items-center justify-center">
+                    ),
+                    onClick: () => { setSelectedWidget('quote'); setPlacementMode(true); setShowRightPanel(false); setWidgetSearchTerm(''); }
+                  },
+                  {
+                    id: 'iframe',
+                    name: 'Iframe',
+                    icon: (
                       <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div onClick={() => { setSelectedWidget('note'); setPlacementMode(true); setShowRightPanel(false); }} className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 hover:bg-gray-700/50 transition-colors cursor-pointer">
-                  <div className="text-center">
-                    <h3 className="text-white font-semibold text-lg mb-2">Note</h3>
-                    <div className="w-12 h-12 mx-auto bg-gray-700 rounded-full flex items-center justify-center">
+                    ),
+                    onClick: () => { setShowIframeModal(true); setShowRightPanel(false); setWidgetSearchTerm(''); }
+                  },
+                  {
+                    id: 'note',
+                    name: 'Note',
+                    icon: (
                       <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
-                    </div>
-                  </div>
-                </div>
-                <div onClick={() => { setShowFavoriteModal(true); setShowRightPanel(false); }} className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 hover:bg-gray-700/50 transition-colors cursor-pointer">
-                  <div className="text-center">
-                    <h3 className="text-white font-semibold text-lg mb-2">Favorite</h3>
-                    <div className="w-12 h-12 mx-auto bg-gray-700 rounded-full flex items-center justify-center">
+                    ),
+                    onClick: () => { setSelectedWidget('note'); setPlacementMode(true); setShowRightPanel(false); setWidgetSearchTerm(''); }
+                  },
+                  {
+                    id: 'favorite',
+                    name: 'Favorite',
+                    icon: (
                       <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" />
                       </svg>
+                    ),
+                    onClick: () => { setShowFavoriteModal(true); setShowRightPanel(false); setWidgetSearchTerm(''); }
+                  }
+                ];
+
+                const filteredWidgets = allWidgets.filter(widget =>
+                  widget.name.toLowerCase().includes(widgetSearchTerm.toLowerCase())
+                );
+
+                if (filteredWidgets.length === 0) {
+                  return (
+                    <div className="text-center py-8">
+                      <p className="text-gray-400 text-sm">No widgets found for "{widgetSearchTerm}"</p>
                     </div>
-                  </div>
-                </div>
-              </div>
+                  );
+                }
+
+                const widgetGrid = [];
+                for (let i = 0; i < filteredWidgets.length; i += 2) {
+                  widgetGrid.push(
+                    <div key={i} className="grid grid-cols-2 gap-4">
+                      {filteredWidgets.slice(i, i + 2).map((widget) => (
+                        <div
+                          key={widget.id}
+                          onClick={widget.onClick}
+                          className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 hover:bg-gray-700/50 transition-colors cursor-pointer"
+                        >
+                          <div className="text-center">
+                            <h3 className="text-white font-semibold text-lg mb-2">{widget.name}</h3>
+                            <div className="w-12 h-12 mx-auto bg-gray-700 rounded-full flex items-center justify-center">
+                              {widget.icon}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }
+
+                return widgetGrid;
+              })()}
             </div>
           </div>
         </div>
