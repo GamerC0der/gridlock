@@ -8,6 +8,24 @@ const sixtyfour = Sixtyfour({
   weight: "400",
 });
 
+const quotes = [
+  { quote: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+  { quote: "Innovation distinguishes between a leader and a follower.", author: "Steve Jobs" },
+  { quote: "Stay hungry, stay foolish.", author: "Steve Jobs" },
+  { quote: "Your time is limited, so don't waste it living someone else's life.", author: "Steve Jobs" },
+  { quote: "The best way to predict the future is to create it.", author: "Peter Drucker" },
+  { quote: "Life is what happens to you while you're busy making other plans.", author: "John Lennon" },
+  { quote: "The journey of a thousand miles begins with one step.", author: "Lao Tzu" },
+  { quote: "What you get by achieving your goals is not as important as what you become by achieving your goals.", author: "Zig Ziglar" },
+  { quote: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" },
+  { quote: "The only limit to our realization of tomorrow will be our doubts of today.", author: "Franklin D. Roosevelt" },
+  { quote: "You miss 100% of the shots you don't take.", author: "Wayne Gretzky" },
+  { quote: "The best time to plant a tree was 20 years ago. The second best time is now.", author: "Chinese Proverb" },
+  { quote: "Don't watch the clock; do what it does. Keep going.", author: "Sam Levenson" },
+  { quote: "The way to get started is to quit talking and begin doing.", author: "Walt Disney" },
+  { quote: "Whether you think you can or you think you can't, you're right.", author: "Henry Ford" }
+];
+
 export default function Home() {
   const [isVisible, setIsVisible] = useState(true);
   const [inputWidth, setInputWidth] = useState('w-[600px]');
@@ -18,7 +36,7 @@ export default function Home() {
   const [selectedResult, setSelectedResult] = useState(-1);
   const [currentQuery, setCurrentQuery] = useState('');
   const [showRightPanel, setShowRightPanel] = useState(false);
-  const [cards, setCards] = useState<Array<{id: number, x: number, y: number, content: string, type?: string, width?: number, height?: number, url?: string}>>([]);
+  const [cards, setCards] = useState<Array<{id: number, x: number, y: number, content: string, type?: string, width?: number, height?: number, url?: string, quote?: {quote: string, author: string}}>>([]);
   const [cardId, setCardId] = useState(0);
   const [draggedCard, setDraggedCard] = useState<number | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -26,12 +44,15 @@ export default function Home() {
   const [placementPreview, setPlacementPreview] = useState<{ x: number, y: number } | null>(null);
   const [selectedWidget, setSelectedWidget] = useState<string | null>(null);
   const [placementMode, setPlacementMode] = useState(false);
+  const [todos, setTodos] = useState<Array<{id: number, cardId: number, text: string, completed: boolean}>>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [weatherData, setWeatherData] = useState<any>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; cardId: number } | null>(null);
   const [showFavoriteModal, setShowFavoriteModal] = useState(false);
   const [favoriteName, setFavoriteName] = useState('');
   const [favoriteUrl, setFavoriteUrl] = useState('');
+  const [showIframeModal, setShowIframeModal] = useState(false);
+  const [iframeUrl, setIframeUrl] = useState('');
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [searchResultsCount, setSearchResultsCount] = useState(9);
   const [accentColor, setAccentColor] = useState('#3b82f6');
@@ -145,6 +166,126 @@ export default function Home() {
           </div>
         )}
       </div>
+    );
+  });
+
+  const Quote = memo(({ quote }: { quote: {quote: string, author: string} }) => {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-white p-2">
+        <div className="text-center">
+          <div className="text-sm italic mb-2 leading-relaxed">
+            "{quote.quote}"
+          </div>
+          <div className="text-xs text-gray-300 font-medium">
+            — {quote.author}
+          </div>
+        </div>
+      </div>
+    );
+  });
+
+  const IframeWidget = memo(({ cardId, url }: { cardId: number; url?: string }) => {
+    const iframeRef = useRef<HTMLIFrameElement>(null);
+
+    useEffect(() => {
+      const iframe = iframeRef.current;
+      if (!iframe) return;
+
+      const loadData = () => {
+        const saved = localStorage.getItem(`gridlock-iframe-${cardId}`);
+        if (saved) {
+          const data = JSON.parse(saved);
+          iframe.contentWindow?.postMessage({ type: 'LOAD_DATA', data }, '*');
+        }
+      };
+
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data.type === 'SAVE_DATA') {
+          localStorage.setItem(`gridlock-iframe-${cardId}`, JSON.stringify(event.data.data));
+        }
+      };
+
+      window.addEventListener('message', handleMessage);
+      iframe.onload = loadData;
+
+      return () => {
+        window.removeEventListener('message', handleMessage);
+      };
+    }, [cardId]);
+
+    const defaultContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: transparent; color: white; padding: 8px; }
+            .content { height: 100%; display: flex; flex-direction: column; }
+            input, textarea { background: #374151; color: white; border: none; border-radius: 4px; padding: 4px 8px; outline: none; font-size: 12px; }
+            input:focus, textarea:focus { ring: 1px solid #3b82f6; }
+            button { background: #2563eb; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px; }
+            button:hover { background: #1d4ed8; }
+          </style>
+        </head>
+        <body>
+          <div class="content">
+            <div style="margin-bottom: 8px;">
+              <input id="input-field" type="text" placeholder="Enter content..." style="width: 100%; margin-bottom: 4px;">
+              <button id="add-btn">Add</button>
+            </div>
+            <div id="content-list" style="flex: 1; overflow-y: auto;"></div>
+          </div>
+          <script>
+            let items = [];
+
+            function render() {
+              const list = document.getElementById('content-list');
+              list.innerHTML = items.map((item, index) => \`<div style="margin-bottom: 4px; padding: 4px; background: #374151; border-radius: 4px;">\${item} <span onclick="removeItem(\${index})" style="float: right; cursor: pointer; color: #ef4444;">×</span></div>\`).join('');
+              saveData();
+            }
+
+            function addItem() {
+              const input = document.getElementById('input-field');
+              const text = input.value.trim();
+              if (text) {
+                items.push(text);
+                input.value = '';
+                render();
+              }
+            }
+
+            function removeItem(index) {
+              items.splice(index, 1);
+              render();
+            }
+
+            function saveData() {
+              window.parent.postMessage({ type: 'SAVE_DATA', data: items }, '*');
+            }
+
+            document.getElementById('add-btn').onclick = addItem;
+            document.getElementById('input-field').onkeypress = (e) => {
+              if (e.key === 'Enter') addItem();
+            };
+
+            window.addEventListener('message', (event) => {
+              if (event.data.type === 'LOAD_DATA') {
+                items = event.data.data;
+                render();
+              }
+            });
+          </script>
+        </body>
+      </html>
+    `;
+
+    return (
+      <iframe
+        ref={iframeRef}
+        srcDoc={url ? undefined : defaultContent}
+        src={url}
+        className="w-full h-full border-none bg-transparent"
+        title="Iframe Widget"
+      />
     );
   });
 
@@ -275,6 +416,25 @@ export default function Home() {
         }
         if (!canPlace) break;
       }
+    } else if (selectedWidget === 'iframe') {
+      width = 2;
+      height = 2;
+      canPlace = true;
+      for (let dx = 0; dx < width; dx++) {
+        for (let dy = 0; dy < height; dy++) {
+          const checkX = snappedX + (dx * 160);
+          const checkY = snappedY + (dy * 160);
+          const existingCard = cards.find(card =>
+            checkX >= card.x && checkX < card.x + (card.width || 1) * 160 &&
+            checkY >= card.y && checkY < card.y + (card.height || 1) * 160
+          );
+          if (existingCard) {
+            canPlace = false;
+            break;
+          }
+        }
+        if (!canPlace) break;
+      }
     } else {
       const existingCard = cards.find(card => card.x === snappedX && card.y === snappedY);
       canPlace = !existingCard;
@@ -283,12 +443,21 @@ export default function Home() {
     if (canPlace) {
       let content = '';
       let url = '';
+      let quote = undefined;
 
-      if (selectedWidget === 'favorite') {
+      if (selectedWidget === 'quote') {
+        quote = quotes[Math.floor(Math.random() * quotes.length)];
+        content = `Quote ${cards.filter(card => card.type === selectedWidget).length + 1}`;
+      } else if (selectedWidget === 'favorite') {
         content = favoriteName;
         url = favoriteUrl;
         setFavoriteName('');
         setFavoriteUrl('');
+      } else if (selectedWidget === 'iframe') {
+        url = iframeUrl;
+        setIframeUrl('');
+        const widgetCount = cards.filter(card => card.type === selectedWidget).length + 1;
+        content = `Iframe ${widgetCount}`;
       } else {
         const widgetCount = cards.filter(card => card.type === selectedWidget).length + 1;
         content = `${selectedWidget.charAt(0).toUpperCase() + selectedWidget.slice(1)} ${widgetCount}`;
@@ -302,7 +471,8 @@ export default function Home() {
         type: selectedWidget,
         width: width,
         height: height,
-        url: url
+        url: url,
+        quote: quote
       };
       setCards(prev => [...prev, newCard]);
       setCardId(prev => prev + 1);
@@ -398,6 +568,19 @@ export default function Home() {
     setFavoriteUrl('');
   };
 
+  const handleIframeSubmit = () => {
+    if (iframeUrl.trim()) {
+      setSelectedWidget('iframe');
+      setPlacementMode(true);
+      setShowIframeModal(false);
+    }
+  };
+
+  const handleIframeCancel = () => {
+    setShowIframeModal(false);
+    setIframeUrl('');
+  };
+
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -460,6 +643,8 @@ export default function Home() {
     localStorage.setItem('gridlock-accent-color', accentColor);
   }, [accentColor]);
 
+
+
   return (
     <div
       className={`min-h-screen bg-background custom-grid-bg ${showResults ? '' : 'flex items-center justify-center flex-col'}`}
@@ -500,7 +685,7 @@ export default function Home() {
               type="search"
               placeholder="Ask or Search"
               onKeyDown={handleKeyDown}
-              className="w-full pl-12 pr-12 py-3 bg-gray-800 dark:bg-gray-800 text-white border border-gray-600 rounded-full shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow placeholder-gray-400 dark:placeholder-gray-400"
+              className="w-full pl-12 pr-12 py-3 bg-white dark:bg-white text-gray-900 dark:text-gray-900 border border-gray-300 dark:border-gray-300 rounded-full shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow placeholder-gray-500 dark:placeholder-gray-500"
               defaultValue={currentQuery}
             />
             <button
@@ -646,6 +831,29 @@ export default function Home() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
+                <div onClick={() => { setSelectedWidget('quote'); setPlacementMode(true); setShowRightPanel(false); }} className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 hover:bg-gray-700/50 transition-colors cursor-pointer">
+                  <div className="text-center">
+                    <h3 className="text-white font-semibold text-lg mb-2">Quote</h3>
+                    <div className="w-12 h-12 mx-auto bg-gray-700 rounded-full flex items-center justify-center">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                <div onClick={() => { setShowIframeModal(true); setShowRightPanel(false); }} className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 hover:bg-gray-700/50 transition-colors cursor-pointer">
+                  <div className="text-center">
+                    <h3 className="text-white font-semibold text-lg mb-2">Iframe</h3>
+                    <div className="w-12 h-12 mx-auto bg-gray-700 rounded-full flex items-center justify-center">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div onClick={() => { setSelectedWidget('note'); setPlacementMode(true); setShowRightPanel(false); }} className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 hover:bg-gray-700/50 transition-colors cursor-pointer">
                   <div className="text-center">
                     <h3 className="text-white font-semibold text-lg mb-2">Note</h3>
@@ -678,8 +886,8 @@ export default function Home() {
           style={{
             left: placementPreview.x,
             top: placementPreview.y,
-            width: `${(selectedWidget === 'weather' ? 2 : 1) * 160 - 20}px`,
-            height: `${(selectedWidget === 'weather' ? 1 : 1) * 160 - 20}px`,
+            width: `${(selectedWidget === 'weather' ? 2 : selectedWidget === 'iframe' ? 2 : 1) * 160 - 20}px`,
+            height: `${(selectedWidget === 'weather' ? 1 : selectedWidget === 'iframe' ? 2 : 1) * 160 - 20}px`,
             zIndex: 5
           }}
         >
@@ -713,15 +921,23 @@ export default function Home() {
           >
             {card.type === 'clock' ? (
               <div className="flex items-center justify-center h-full">
-                <Clock size={Math.min(cardWidth - 16, cardHeight - 16)} />
+                <Clock key={card.id} size={Math.min(cardWidth - 16, cardHeight - 16)} />
               </div>
             ) : card.type === 'weather' ? (
               <div className="flex items-center justify-center h-full">
-                <Weather />
+                <Weather key={card.id} />
               </div>
             ) : card.type === 'note' ? (
               <div className="h-full p-1">
-                <Note cardId={card.id} />
+                <Note key={card.id} cardId={card.id} />
+              </div>
+            ) : card.type === 'quote' ? (
+              <div className="flex items-center justify-center h-full">
+                <Quote key={card.id} quote={card.quote!} />
+              </div>
+            ) : card.type === 'iframe' ? (
+              <div className="h-full">
+                <IframeWidget key={card.id} cardId={card.id} url={card.url} />
               </div>
             ) : card.type === 'favorite' ? (
               <div
@@ -827,6 +1043,52 @@ export default function Home() {
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
               >
                 Add Favorite
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showIframeModal && (
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gray-800/95 dark:bg-gray-800/95 backdrop-blur-md border border-gray-600 rounded-xl shadow-2xl p-6 w-96 max-w-[90vw] relative">
+            <button
+              onClick={handleIframeCancel}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <h2 className="text-white text-xl font-semibold mb-6 text-center">Add Iframe</h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-gray-300 text-sm font-medium mb-2">URL</label>
+                <input
+                  type="url"
+                  value={iframeUrl}
+                  onChange={(e) => setIframeUrl(e.target.value)}
+                  placeholder="https://example.com"
+                  className="w-full px-3 py-2 bg-gray-700 dark:bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={handleIframeCancel}
+                className="flex-1 px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleIframeSubmit}
+                disabled={!iframeUrl.trim()}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
+              >
+                Add Iframe
               </button>
             </div>
           </div>
