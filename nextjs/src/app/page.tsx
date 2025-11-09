@@ -86,6 +86,7 @@ export default function Home() {
             strokeLinecap="round"
           />
           <line
+          
             x1="100"
             y1="100"
             x2={100 + 70 * Math.cos((minuteAngle - 90) * Math.PI / 180)}
@@ -429,6 +430,7 @@ export default function Home() {
     }
   }, [selectedResult]);
 
+  // Load cards from localStorage on mount
   useEffect(() => {
     const savedCards = localStorage.getItem('gridlock-cards');
     const savedCardId = localStorage.getItem('gridlock-cardId');
@@ -440,6 +442,7 @@ export default function Home() {
     }
   }, []);
 
+  // Save cards to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('gridlock-cards', JSON.stringify(cards));
     localStorage.setItem('gridlock-cardId', cardId.toString());
@@ -514,39 +517,35 @@ export default function Home() {
 
             {!isLoading && !error && searchResults.length > 0 && (
               <>
-                <div className="space-y-3">
-                  {searchResults.slice(0, 10).map((result, index) => (
+                <div className="grid grid-cols-3 gap-4 max-w-4xl">
+                  {searchResults.slice(0, 9).map((result, index) => (
                   <div
                     key={index}
                     ref={el => { resultRefs.current[index] = el; }}
                     onClick={() => result.url && window.open(result.url, '_blank')}
-                    className={`group bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-5 transition-all duration-200 cursor-pointer ${
+                    className={`group bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 transition-all duration-200 cursor-pointer aspect-[2/1] flex flex-col ${
                       selectedResult === index ? 'ring-2 ring-blue-500 bg-gray-700/70' : ''
                     }`}
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-white font-semibold text-lg mb-2 transition-colors line-clamp-2">
-                          {result.title}
-                        </h3>
-                        <div className="flex items-center space-x-2 mb-3">
-                          <div className="flex items-center text-gray-400 text-sm">
-                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                            </svg>
-                            <span className="truncate transition-colors">
-                              {result.url}
-                            </span>
-                          </div>
-                        </div>
-                        {result.desc && (
-                          <p className="text-gray-300 text-sm leading-relaxed line-clamp-3">
-                            {result.desc}
-                          </p>
-                        )}
+                    <div className="flex flex-col h-full">
+                      <h3 className="text-white font-semibold text-sm mb-2 transition-colors line-clamp-2 flex-shrink-0">
+                        {result.title}
+                      </h3>
+                      <div className="flex items-center text-gray-400 text-xs mb-2 flex-shrink-0">
+                        <svg className="w-3 h-3 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                        </svg>
+                        <span className="truncate transition-colors">
+                          {result.url}
+                        </span>
                       </div>
-                      <div className="ml-4 flex-shrink-0">
-                        <svg className="w-5 h-5 text-gray-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      {result.desc && (
+                        <p className="text-gray-300 text-xs leading-relaxed line-clamp-3 flex-1">
+                          {result.desc}
+                        </p>
+                      )}
+                      <div className="flex justify-end mt-2 flex-shrink-0">
+                        <svg className="w-4 h-4 text-gray-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
                       </div>
