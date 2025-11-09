@@ -1584,7 +1584,10 @@ export default function Home() {
                 <label className="block text-gray-300 text-sm font-medium mb-3">Search Results</label>
                 <div className="flex space-x-3">
                   <button
-                    onClick={() => setSearchResultsCount(4)}
+                    onClick={() => {
+                      setSearchResultsCount(4);
+                      localStorage.setItem('gridlock-search-results-count', '4');
+                    }}
                     className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
                       searchResultsCount === 4
                         ? 'bg-blue-600 text-white'
@@ -1594,7 +1597,10 @@ export default function Home() {
                     4
                   </button>
                   <button
-                    onClick={() => setSearchResultsCount(9)}
+                    onClick={() => {
+                      setSearchResultsCount(9);
+                      localStorage.setItem('gridlock-search-results-count', '9');
+                    }}
                     className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
                       searchResultsCount === 9
                         ? 'bg-blue-600 text-white'
@@ -1610,7 +1616,10 @@ export default function Home() {
                 <label className="block text-gray-300 text-sm font-medium mb-3">Temperature Unit</label>
                 <div className="flex space-x-3">
                   <button
-                    onClick={() => setTemperatureUnit('F')}
+                    onClick={() => {
+                      setTemperatureUnit('F');
+                      localStorage.setItem('gridlock-temperature-unit', 'F');
+                    }}
                     className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
                       temperatureUnit === 'F'
                         ? 'bg-blue-600 text-white'
@@ -1620,7 +1629,10 @@ export default function Home() {
                     °F
                   </button>
                   <button
-                    onClick={() => setTemperatureUnit('C')}
+                    onClick={() => {
+                      setTemperatureUnit('C');
+                      localStorage.setItem('gridlock-temperature-unit', 'C');
+                    }}
                     className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
                       temperatureUnit === 'C'
                         ? 'bg-blue-600 text-white'
