@@ -104,6 +104,7 @@ export default function Home() {
   const [showRightPanel, setShowRightPanel] = useState(false);
   const [cards, setCards] = useState<Array<{id: number, x: number, y: number, content: string, type?: string, width?: number, height?: number, url?: string, quote?: {quote: string, author: string}}>>([]);
   const [cardId, setCardId] = useState(0);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [draggedCard, setDraggedCard] = useState<number | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [dragPreview, setDragPreview] = useState<{ x: number, y: number } | null>(null);
@@ -271,16 +272,24 @@ export default function Home() {
       if (!iframe) return;
 
       const loadData = () => {
-        const saved = localStorage.getItem(`gridlock-iframe-${cardId}`);
-        if (saved) {
-          const data = JSON.parse(saved);
-          iframe.contentWindow?.postMessage({ type: 'LOAD_DATA', data }, '*');
+        try {
+          const saved = localStorage.getItem(`gridlock-iframe-${cardId}`);
+          if (saved) {
+            const data = JSON.parse(saved);
+            iframe.contentWindow?.postMessage({ type: 'LOAD_DATA', data }, '*');
+          }
+        } catch (error) {
+          console.warn(`Failed to load iframe data for card ${cardId} from localStorage:`, error);
         }
       };
 
       const handleMessage = (event: MessageEvent) => {
         if (event.data.type === 'SAVE_DATA') {
-          localStorage.setItem(`gridlock-iframe-${cardId}`, JSON.stringify(event.data.data));
+          try {
+            localStorage.setItem(`gridlock-iframe-${cardId}`, JSON.stringify(event.data.data));
+          } catch (error) {
+            console.warn(`Failed to save iframe data for card ${cardId} to localStorage:`, error);
+          }
         }
       };
 
@@ -372,9 +381,13 @@ export default function Home() {
     const [noteText, setNoteText] = useState('');
 
     useEffect(() => {
-      const saved = localStorage.getItem(`gridlock-note-${cardId}`);
-      if (saved) {
-        setNoteText(saved);
+      try {
+        const saved = localStorage.getItem(`gridlock-note-${cardId}`);
+        if (saved) {
+          setNoteText(saved);
+        }
+      } catch (error) {
+        console.warn(`Failed to load note for card ${cardId} from localStorage:`, error);
       }
     }, [cardId]);
 
@@ -847,32 +860,53 @@ export default function Home() {
   }, [selectedResult]);
 
   useEffect(() => {
-    const savedCards = localStorage.getItem('gridlock-cards');
-    const savedCardId = localStorage.getItem('gridlock-cardId');
-    if (savedCards) {
-      setCards(JSON.parse(savedCards));
-    }
-    if (savedCardId) {
-      setCardId(parseInt(savedCardId, 10));
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('gridlock-cards', JSON.stringify(cards));
-    localStorage.setItem('gridlock-cardId', cardId.toString());
-  }, [cards, cardId]);
-
-  useEffect(() => {
-    const savedHistory = localStorage.getItem('gridlock-search-history');
-    if (savedHistory) {
-      setSearchHistory(JSON.parse(savedHistory));
+    try {
+      const savedCards = localStorage.getItem('gridlock-cards');
+      const savedCardId = localStorage.getItem('gridlock-cardId');
+      if (savedCards) {
+        setCards(JSON.parse(savedCards));
+      }
+      if (savedCardId) {
+        setCardId(parseInt(savedCardId, 10));
+      }
+    } catch (error) {
+      console.warn('Failed to load cards from localStorage:', error);
+      // Clear corrupted data
+      localStorage.removeItem('gridlock-cards');
+      localStorage.removeItem('gridlock-cardId');
+    } finally {
+      setIsDataLoaded(true);
     }
   }, []);
 
   useEffect(() => {
-    const savedAccentColor = localStorage.getItem('gridlock-accent-color');
-    if (savedAccentColor) {
-      setAccentColor(savedAccentColor);
+    if (isDataLoaded) {
+      localStorage.setItem('gridlock-cards', JSON.stringify(cards));
+      localStorage.setItem('gridlock-cardId', cardId.toString());
+    }
+  }, [cards, cardId, isDataLoaded]);
+
+  useEffect(() => {
+    try {
+      const savedHistory = localStorage.getItem('gridlock-search-history');
+      if (savedHistory) {
+        setSearchHistory(JSON.parse(savedHistory));
+      }
+    } catch (error) {
+      console.warn('Failed to load search history from localStorage:', error);
+      localStorage.removeItem('gridlock-search-history');
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const savedAccentColor = localStorage.getItem('gridlock-accent-color');
+      if (savedAccentColor) {
+        setAccentColor(savedAccentColor);
+      }
+    } catch (error) {
+      console.warn('Failed to load accent color from localStorage:', error);
+      localStorage.removeItem('gridlock-accent-color');
     }
   }, []);
 
@@ -881,15 +915,39 @@ export default function Home() {
   }, [accentColor]);
 
   useEffect(() => {
-    const savedTemperatureUnit = localStorage.getItem('gridlock-temperature-unit');
-    if (savedTemperatureUnit && (savedTemperatureUnit === 'C' || savedTemperatureUnit === 'F')) {
-      setTemperatureUnit(savedTemperatureUnit);
+    try {
+      const savedTemperatureUnit = localStorage.getItem('gridlock-temperature-unit');
+      if (savedTemperatureUnit && (savedTemperatureUnit === 'C' || savedTemperatureUnit === 'F')) {
+        setTemperatureUnit(savedTemperatureUnit);
+      }
+    } catch (error) {
+      console.warn('Failed to load temperature unit from localStorage:', error);
+      localStorage.removeItem('gridlock-temperature-unit');
     }
   }, []);
 
   useEffect(() => {
     localStorage.setItem('gridlock-temperature-unit', temperatureUnit);
   }, [temperatureUnit]);
+
+  useEffect(() => {
+    try {
+      const savedSearchResultsCount = localStorage.getItem('gridlock-search-results-count');
+      if (savedSearchResultsCount) {
+        const count = parseInt(savedSearchResultsCount, 10);
+        if (count === 4 || count === 9) {
+          setSearchResultsCount(count);
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load search results count from localStorage:', error);
+      localStorage.removeItem('gridlock-search-results-count');
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('gridlock-search-results-count', searchResultsCount.toString());
+  }, [searchResultsCount]);
 
 
 
@@ -1317,12 +1375,10 @@ export default function Home() {
         return (
           <div
             key={card.id}
-            className={`absolute bg-gray-800/90 backdrop-blur-sm border rounded-lg p-4 select-none transition-all ${
+            className={`absolute bg-gray-800/90 backdrop-blur-sm border rounded-lg p-4 select-none ${
               isDragging
                 ? 'border-blue-400 shadow-lg opacity-80 cursor-move'
-                : deleteMode
-                ? 'border-red-400 cursor-pointer hover:bg-red-900/20'
-                : 'border-gray-600 cursor-move'
+                : `border-gray-600 cursor-move transition-all duration-200 ease-out ${deleteMode ? 'border-red-400 hover:bg-red-900/20' : ''}`
             }`}
             style={{
               left: position.x,
