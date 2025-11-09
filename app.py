@@ -101,6 +101,68 @@ def weather():
 
     return jsonify(weather_data)
 
+@app.route('/v1/chat/completions', methods=['POST'])
+def chat_completions():
+    try:
+        data = request.get_json()
+        messages = data.get('messages', [])
+        stream = data.get('stream', False)
+
+        if not messages:
+            return jsonify({'error': 'Messages array is required'}), 400
+
+        last_message = messages[-1]['content'] if messages else ""
+        ai_response = f"Based on the search results, here's a summary: {last_message[:200]}..."
+
+        if stream:
+            def generate():
+                response_text = ai_response
+                for i, char in enumerate(response_text):
+                    chunk = {
+                        "id": "chatcmpl-c1bd817c0e774834871c794eb374c741",
+                        "object": "chat.completion.chunk",
+                        "created": 1762718924,
+                        "model": "meta/llama-4-scout-17b-16e-instruct",
+                        "choices": [{
+                            "index": 0,
+                            "delta": {"content": char} if i > 0 else {"role": "assistant", "content": ""},
+                            "logprobs": None,
+                            "finish_reason": None if i < len(response_text) - 1 else "stop"
+                        }]
+                    }
+                    yield f"data: data: {json.dumps(chunk)}\n\n"
+                    time.sleep(0.01)
+
+                yield "data: data: [DONE]\n\n"
+
+            return app.response_class(generate(), mimetype='text/plain')
+
+        else:
+            return jsonify({
+                "id": "chatcmpl-c1bd817c0e774834871c794eb374c741",
+                "object": "chat.completion",
+                "created": 1762718924,
+                "model": "meta/llama-4-scout-17b-16e-instruct",
+                "choices": [{
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": ai_response
+                    },
+                    "logprobs": None,
+                    "finish_reason": "stop",
+                    "stop_reason": None
+                }],
+                "usage": {
+                    "prompt_tokens": len(last_message.split()),
+                    "completion_tokens": len(ai_response.split()),
+                    "total_tokens": len(last_message.split()) + len(ai_response.split())
+                }
+            })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/', methods=['GET'])
 def health():
     return jsonify({'status': 'running', 'message': 'GridLock search API'})

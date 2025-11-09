@@ -58,6 +58,7 @@ export default function Home() {
   const [accentColor, setAccentColor] = useState('#3b82f6');
   const [temperatureUnit, setTemperatureUnit] = useState<'C' | 'F'>('F');
   const [widgetSearchTerm, setWidgetSearchTerm] = useState('');
+  const [aiSummary, setAiSummary] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const resultRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -335,16 +336,75 @@ export default function Home() {
   const performSearch = async (query: string) => {
     setIsLoading(true);
     setError(null);
+    setAiSummary('');
+
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/search?q=BACKEND%20${encodeURIComponent(query)}`);
       if (!response.ok) throw new Error('Search failed');
       const data = await response.json();
       setSearchResults(data.results || []);
+
+      getAiSummary(query, data.results || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Search failed');
       setSearchResults([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const getAiSummary = async (query: string, results: any[]) => {
+    try {
+      const messages = [
+        {
+          role: "user",
+          content: `Please provide a brief summary of the following search results for the query "${query}". Here are the top results:\n\n${results.slice(0, 5).map((r, i) => `${i + 1}. ${r.title}: ${r.desc || 'No description'}`).join('\n')}`
+        }
+      ];
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/v1/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: messages,
+          stream: true
+        })
+      });
+
+      if (!response.ok) throw new Error('AI summary failed');
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (reader) {
+        let accumulatedSummary = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: data: ')) {
+              const dataStr = line.slice(11);
+              if (dataStr === '[DONE]') break;
+              try {
+                const data = JSON.parse(dataStr);
+                if (data.choices && data.choices[0] && data.choices[0].delta && data.choices[0].delta.content) {
+                  accumulatedSummary += data.choices[0].delta.content;
+                  setAiSummary(accumulatedSummary);
+                }
+              } catch (e) {
+              }
+            }
+          }
+        }
+      }
+    } catch (err) {
+      setAiSummary('AI summary unavailable');
     }
   };
 
@@ -382,7 +442,8 @@ export default function Home() {
     setIsVisible(true);
     setInputWidth('w-[600px]');
     setSearchResults([]);
-    
+    setAiSummary('');
+
     setError(null);
     setSelectedResult(-1);
     setCurrentQuery('');
@@ -764,6 +825,22 @@ export default function Home() {
 
             {!isLoading && !error && searchResults.length > 0 && (
               <>
+                <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-6 mb-6 max-w-4xl">
+                  <div className="flex items-center mb-3">
+                    <svg className="w-5 h-5 text-blue-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    <h3 className="text-white font-semibold text-lg">AI Summary</h3>
+                  </div>
+                  <div className="text-gray-300 leading-relaxed">
+                    {aiSummary ? (
+                      <p>{aiSummary}</p>
+                    ) : (
+                      <p className="text-gray-500"></p>
+                    )}
+                  </div>
+                </div>
+
                 <div className={`grid gap-4 ${searchResultsCount === 9 ? 'grid-cols-3 max-w-4xl' : 'grid-cols-2 max-w-2xl'}`}>
                   {searchResults.slice(0, searchResultsCount).map((result, index) => (
                   <div
