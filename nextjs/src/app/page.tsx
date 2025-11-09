@@ -56,6 +56,7 @@ export default function Home() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [searchResultsCount, setSearchResultsCount] = useState(9);
   const [accentColor, setAccentColor] = useState('#3b82f6');
+  const [temperatureUnit, setTemperatureUnit] = useState<'C' | 'F'>('F');
   const [widgetSearchTerm, setWidgetSearchTerm] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const resultRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -138,13 +139,20 @@ export default function Home() {
     );
   };
 
-  const Weather = memo(({ size = 120 }: { size?: number }) => {
+  const Weather = memo(({ size = 120, temperatureUnit = 'F' }: { size?: number; temperatureUnit?: 'C' | 'F' }) => {
+    const convertTemperature = (fahrenheit: number, unit: 'C' | 'F') => {
+      if (unit === 'C') {
+        return Math.round((fahrenheit - 32) * 5 / 9);
+      }
+      return Math.round(fahrenheit);
+    };
+
     return (
       <div className="flex flex-col items-center justify-center h-full text-white">
         {weatherData ? (
           <div className="text-center">
             <div className="text-2xl font-bold mb-1">
-              {weatherData.weather.temperature + 10}°F
+              {convertTemperature(weatherData.weather.temperature + 10, temperatureUnit)}°{temperatureUnit}
             </div>
             <div className="text-sm font-medium mb-1">
               {weatherData.location.city}, {weatherData.location.country}
@@ -663,6 +671,17 @@ export default function Home() {
     localStorage.setItem('gridlock-accent-color', accentColor);
   }, [accentColor]);
 
+  useEffect(() => {
+    const savedTemperatureUnit = localStorage.getItem('gridlock-temperature-unit');
+    if (savedTemperatureUnit && (savedTemperatureUnit === 'C' || savedTemperatureUnit === 'F')) {
+      setTemperatureUnit(savedTemperatureUnit);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('gridlock-temperature-unit', temperatureUnit);
+  }, [temperatureUnit]);
+
 
 
   return (
@@ -979,7 +998,7 @@ export default function Home() {
               </div>
             ) : card.type === 'weather' ? (
               <div className="flex items-center justify-center h-full">
-                <Weather key={card.id} />
+                <Weather key={card.id} temperatureUnit={temperatureUnit} />
               </div>
             ) : card.type === 'note' ? (
               <div className="h-full p-1">
@@ -1185,6 +1204,32 @@ export default function Home() {
                     }`}
                   >
                     9
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-gray-300 text-sm font-medium mb-3">Temperature Unit</label>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => setTemperatureUnit('F')}
+                    className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
+                      temperatureUnit === 'F'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    °F
+                  </button>
+                  <button
+                    onClick={() => setTemperatureUnit('C')}
+                    className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
+                      temperatureUnit === 'C'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    °C
                   </button>
                 </div>
               </div>
