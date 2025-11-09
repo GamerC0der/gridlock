@@ -34,6 +34,7 @@ export default function Home() {
   const [favoriteUrl, setFavoriteUrl] = useState('');
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [searchResultsCount, setSearchResultsCount] = useState(9);
+  const [accentColor, setAccentColor] = useState('#3b82f6');
   const inputRef = useRef<HTMLInputElement>(null);
   const resultRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -432,7 +433,6 @@ export default function Home() {
     }
   }, [selectedResult]);
 
-  // Load cards from localStorage on mount
   useEffect(() => {
     const savedCards = localStorage.getItem('gridlock-cards');
     const savedCardId = localStorage.getItem('gridlock-cardId');
@@ -444,11 +444,21 @@ export default function Home() {
     }
   }, []);
 
-  // Save cards to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('gridlock-cards', JSON.stringify(cards));
     localStorage.setItem('gridlock-cardId', cardId.toString());
   }, [cards, cardId]);
+
+  useEffect(() => {
+    const savedAccentColor = localStorage.getItem('gridlock-accent-color');
+    if (savedAccentColor) {
+      setAccentColor(savedAccentColor);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('gridlock-accent-color', accentColor);
+  }, [accentColor]);
 
   return (
     <div
@@ -845,6 +855,20 @@ export default function Home() {
                     9
                   </button>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-gray-300 text-sm font-medium mb-3">Actions</label>
+                <button
+                  onClick={() => {
+                    setCards([]);
+                    setCardId(0);
+                    setShowSettingsModal(false);
+                  }}
+                  className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Clear All Cards
+                </button>
               </div>
             </div>
 
