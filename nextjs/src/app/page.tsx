@@ -778,7 +778,15 @@ export default function Home() {
 
       {showFavoriteModal && (
         <div className="fixed inset-0 bg-black/50 dark:bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gray-800/95 dark:bg-gray-800/95 backdrop-blur-md border border-gray-600 rounded-xl shadow-2xl p-6 w-96 max-w-[90vw]">
+          <div className="bg-gray-800/95 dark:bg-gray-800/95 backdrop-blur-md border border-gray-600 rounded-xl shadow-2xl p-6 w-96 max-w-[90vw] relative">
+            <button
+              onClick={handleFavoriteCancel}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
             <h2 className="text-white text-xl font-semibold mb-6 text-center">Add Favorite</h2>
 
             <div className="space-y-4">
@@ -827,7 +835,15 @@ export default function Home() {
 
       {showSettingsModal && (
         <div className="fixed inset-0 bg-black/50 dark:bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gray-800/95 dark:bg-gray-800/95 backdrop-blur-md border border-gray-600 rounded-xl shadow-2xl p-6 w-96 max-w-[90vw]">
+          <div className="bg-gray-800/95 dark:bg-gray-800/95 backdrop-blur-md border border-gray-600 rounded-xl shadow-2xl p-6 w-96 max-w-[90vw] relative">
+            <button
+              onClick={() => setShowSettingsModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
             <h2 className="text-white text-xl font-semibold mb-6 text-center">Settings</h2>
 
             <div className="space-y-6">
