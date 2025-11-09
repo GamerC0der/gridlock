@@ -26,6 +26,72 @@ const quotes = [
   { quote: "Whether you think you can or you think you can't, you're right.", author: "Henry Ford" }
 ];
 
+const isCalculation = (query: string): boolean => {
+  const trimmed = query.trim().toLowerCase();
+
+  const mathPatterns = [
+    /\b(sin|cos|tan|asin|acos|atan|sqrt|log|ln|exp|abs|round|floor|ceil|min|max|pi|e)\b/,
+    /[+\-*/^()0-9.\s]+/
+  ];
+
+  const hasNumbers = /\d/.test(trimmed);
+  const hasOperators = /[+\-*/^()]/.test(trimmed);
+  const hasOnlyMath = /^[+\-*/^()0-9.\s=]*(sin|cos|tan|asin|acos|atan|sqrt|log|ln|exp|abs|round|floor|ceil|min|max|pi|e|\s)*[+\-*/^()0-9.\s=]*$/i.test(trimmed);
+
+  const isLikelySearch = /\b(what|how|when|where|why|who|which|can|will|should|would|could|does|do|is|are|was|were|have|has|had)\b/i.test(trimmed);
+
+  return hasNumbers && (hasOperators || mathPatterns.some(pattern => pattern.test(trimmed))) && hasOnlyMath && !isLikelySearch;
+};
+
+const evaluateCalculation = (expression: string): string => {
+  try {
+    let sanitized = expression.replace(/\^/g, '**').replace(/=+$/, '');
+
+    const mathReplacements: { [key: string]: string } = {
+      'pi': 'Math.PI',
+      'e': 'Math.E',
+      'sin': 'Math.sin',
+      'cos': 'Math.cos',
+      'tan': 'Math.tan',
+      'asin': 'Math.asin',
+      'acos': 'Math.acos',
+      'atan': 'Math.atan',
+      'sqrt': 'Math.sqrt',
+      'log': 'Math.log10',
+      'ln': 'Math.log',
+      'exp': 'Math.exp',
+      'abs': 'Math.abs',
+      'round': 'Math.round',
+      'floor': 'Math.floor',
+      'ceil': 'Math.ceil',
+      'min': 'Math.min',
+      'max': 'Math.max'
+    };
+
+    Object.keys(mathReplacements).forEach(func => {
+      const regex = new RegExp(`\\b${func}\\b`, 'gi');
+      sanitized = sanitized.replace(regex, mathReplacements[func]);
+    });
+
+    sanitized = sanitized.replace(/\s/g, '');
+
+    if (!/^[0-9+\-*/().Math.PI\s=]+$/.test(sanitized.replace(/Math\./g, '').replace(/PI|E/g, ''))) {
+      return 'Invalid calculation';
+    }
+
+    const result = new Function('Math', `return ${sanitized}`)(Math);
+
+    if (typeof result === 'number' && isFinite(result)) {
+      const rounded = Math.round(result * 1000000000) / 1000000000;
+      return rounded.toString();
+    } else {
+      return 'Invalid result';
+    }
+  } catch (error) {
+    return 'Calculation error';
+  }
+};
+
 export default function Home() {
   const [isVisible, setIsVisible] = useState(true);
   const [inputWidth, setInputWidth] = useState('w-[600px]');
@@ -61,6 +127,7 @@ export default function Home() {
   const [aiSummary, setAiSummary] = useState('');
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [calculationResult, setCalculationResult] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -337,6 +404,17 @@ export default function Home() {
 
   const performSearch = async (query: string) => {
     const trimmedQuery = query.trim();
+
+    if (isCalculation(trimmedQuery)) {
+      const result = evaluateCalculation(trimmedQuery);
+      setCalculationResult(result);
+      setSearchResults([]);
+      setAiSummary('');
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
     if (trimmedQuery && !searchHistory.includes(trimmedQuery)) {
       const newHistory = [trimmedQuery, ...searchHistory.slice(0, 9)];
       setSearchHistory(newHistory);
@@ -346,6 +424,7 @@ export default function Home() {
     setIsLoading(true);
     setError(null);
     setAiSummary('');
+    setCalculationResult(null);
 
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/search?q=BACKEND%20${encodeURIComponent(query)}`);
@@ -431,7 +510,7 @@ export default function Home() {
       }
     } else if (e.key === 'Escape' && showResults) {
       clearSearch();
-    } else if (showResults && searchResults.length > 0) {
+    } else if (showResults && searchResults.length > 0 && !calculationResult) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         setSelectedResult(prev => Math.min(prev + 1, searchResults.length - 1));
@@ -452,6 +531,7 @@ export default function Home() {
     setInputWidth('w-[600px]');
     setSearchResults([]);
     setAiSummary('');
+    setCalculationResult(null);
 
     setError(null);
     setSelectedResult(-1);
@@ -833,9 +913,24 @@ export default function Home() {
               </div>
             )}
 
-            {!isLoading && !error && searchResults.length === 0 && currentQuery && (
+            {!isLoading && !error && searchResults.length === 0 && currentQuery && !calculationResult && (
               <div className="text-center py-8">
                 <p className="text-gray-400 text-lg">No results found for "{currentQuery}"</p>
+              </div>
+            )}
+
+            {!isLoading && !error && calculationResult && (
+              <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-6 mb-6 max-w-4xl">
+                <div className="flex items-center mb-3">
+                  <svg className="w-5 h-5 text-blue-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                  <h3 className="text-white font-semibold text-lg">Calculator</h3>
+                </div>
+                <div className="bg-gray-900/50 rounded-lg p-4">
+                  <div className="text-gray-300 text-sm mb-2">Expression: {currentQuery}</div>
+                  <div className="text-white text-2xl font-mono font-bold">= {calculationResult}</div>
+                </div>
               </div>
             )}
 
@@ -901,6 +996,14 @@ export default function Home() {
                   </p>
                 </div>
               </>
+            )}
+
+            {!isLoading && !error && calculationResult && (
+              <div className="text-center mt-6 mb-6">
+                <p className="text-gray-400 text-sm">
+                  Calculation result for <span className="text-blue-400 font-medium">"{currentQuery}"</span>
+                </p>
+              </div>
             )}
           </div>
         ) : (
