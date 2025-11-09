@@ -530,13 +530,15 @@ export default function Home() {
 
             {!isLoading && !error && searchResults.length > 0 && (
               <>
-                <div className="grid grid-cols-2 gap-4 max-w-2xl">
+                <div className={`grid gap-4 ${searchResultsCount === 9 ? 'grid-cols-3 max-w-4xl' : 'grid-cols-2 max-w-2xl'}`}>
                   {searchResults.slice(0, searchResultsCount).map((result, index) => (
                   <div
                     key={index}
                     ref={el => { resultRefs.current[index] = el; }}
                     onClick={() => result.url && window.open(result.url, '_blank')}
-                    className={`group bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 transition-all duration-200 cursor-pointer aspect-[2/1] flex flex-col ${
+                    className={`group bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl transition-all duration-200 cursor-pointer flex flex-col ${
+                      searchResultsCount === 9 ? 'p-6 aspect-[3/2]' : 'p-4 aspect-[2/1]'
+                    } ${
                       selectedResult === index ? 'ring-2 ring-blue-500 bg-gray-700/70' : ''
                     }`}
                   >
