@@ -182,7 +182,6 @@ export default function Home() {
             strokeLinecap="round"
           />
           <line
-          
             x1="100"
             y1="100"
             x2={100 + 70 * Math.cos((minuteAngle - 90) * Math.PI / 180)}
@@ -421,6 +420,20 @@ export default function Home() {
       localStorage.setItem('gridlock-search-history', JSON.stringify(newHistory));
     }
 
+    const widgetKeywords = {
+      'clock': { name: 'Clock Widget', desc: 'Add a clock widget to your dashboard', icon: '🕐' },
+      'weather': { name: 'Weather Widget', desc: 'Add a weather widget to your dashboard', icon: '🌤️' },
+      'quote': { name: 'Quote Widget', desc: 'Add a random inspirational quote widget', icon: '💭' },
+      'note': { name: 'Note Widget', desc: 'Add a note widget to your dashboard', icon: '📝' },
+      'iframe': { name: 'Iframe Widget', desc: 'Add an iframe widget to embed websites', icon: '🌐' },
+      'favorite': { name: 'Favorite Widget', desc: 'Add a favorite link widget to your dashboard', icon: '⭐' }
+    };
+
+    const lowerQuery = trimmedQuery.toLowerCase();
+    const matchingWidget = Object.keys(widgetKeywords).find(keyword =>
+      keyword === lowerQuery || lowerQuery.includes(keyword)
+    );
+
     setIsLoading(true);
     setError(null);
     setAiSummary('');
@@ -430,9 +443,22 @@ export default function Home() {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/search?q=BACKEND%20${encodeURIComponent(query)}`);
       if (!response.ok) throw new Error('Search failed');
       const data = await response.json();
-      setSearchResults(data.results || []);
+      let results = data.results || [];
 
-      getAiSummary(query, data.results || []);
+      if (matchingWidget) {
+        const widget = widgetKeywords[matchingWidget as keyof typeof widgetKeywords];
+        const widgetResult = {
+          title: `${widget.icon} ${widget.name}`,
+          url: '#',
+          desc: widget.desc,
+          type: 'widget',
+          widgetType: matchingWidget
+        };
+        results = [widgetResult, ...results];
+      }
+
+      setSearchResults(results);
+      getAiSummary(query, results);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Search failed');
       setSearchResults([]);
@@ -520,7 +546,14 @@ export default function Home() {
       } else if (e.key === 'Enter' && selectedResult >= 0) {
         e.preventDefault();
         const result = searchResults[selectedResult];
-        if (result.url) window.open(result.url, '_blank');
+        if (result.type === 'widget') {
+          setSelectedWidget(result.widgetType);
+          setPlacementMode(true);
+          setShowRightPanel(false);
+          clearSearch();
+        } else if (result.url && result.url !== '#') {
+          window.open(result.url, '_blank');
+        }
       }
     }
   };
@@ -867,6 +900,17 @@ export default function Home() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
         </button>
+        <button
+          onClick={() => {
+            setCards([]);
+            setCardId(0);
+          }}
+          className="w-12 h-12 bg-gray-700 dark:bg-gray-700 rounded-full flex items-center justify-center transition-all duration-200 hover:bg-gray-600 dark:hover:bg-gray-600"
+        >
+          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </button>
       </div>
       {showResults && (
         <div className="pt-8 pb-4 flex justify-center">
@@ -957,7 +1001,16 @@ export default function Home() {
                   <div
                     key={index}
                     ref={el => { resultRefs.current[index] = el; }}
-                    onClick={() => result.url && window.open(result.url, '_blank')}
+                    onClick={() => {
+                      if (result.type === 'widget') {
+                        setSelectedWidget(result.widgetType);
+                        setPlacementMode(true);
+                        setShowRightPanel(false);
+                        clearSearch();
+                      } else if (result.url && result.url !== '#') {
+                        window.open(result.url, '_blank');
+                      }
+                    }}
                     className={`group bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl transition-all duration-200 cursor-pointer flex flex-col ${
                       searchResultsCount === 9 ? 'p-6 aspect-[3/2]' : 'p-4 aspect-[2/1]'
                     } ${
@@ -969,12 +1022,25 @@ export default function Home() {
                         {result.title}
                       </h3>
                       <div className="flex items-center text-gray-400 text-xs mb-2 flex-shrink-0">
-                        <svg className="w-3 h-3 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                        </svg>
-                        <span className="truncate transition-colors">
-                          {result.url}
-                        </span>
+                        {result.type === 'widget' ? (
+                          <>
+                            <svg className="w-3 h-3 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
+                            </svg>
+                            <span className="truncate transition-colors">
+                              Widget
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-3 h-3 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                            </svg>
+                            <span className="truncate transition-colors">
+                              {result.url}
+                            </span>
+                          </>
+                        )}
                       </div>
                       {result.desc && (
                         <p className="text-gray-300 text-xs leading-relaxed line-clamp-3 flex-1">
@@ -982,9 +1048,15 @@ export default function Home() {
                         </p>
                       )}
                       <div className="flex justify-end mt-2 flex-shrink-0">
-                        <svg className="w-4 h-4 text-gray-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
+                        {result.type === 'widget' ? (
+                          <svg className="w-4 h-4 text-blue-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4 text-gray-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        )}
                       </div>
                     </div>
                   </div>
