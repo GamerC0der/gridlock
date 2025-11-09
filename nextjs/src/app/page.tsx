@@ -128,6 +128,7 @@ export default function Home() {
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [calculationResult, setCalculationResult] = useState<string | null>(null);
+  const [deleteMode, setDeleteMode] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -534,8 +535,12 @@ export default function Home() {
         setShowResults(true);
         e.currentTarget?.blur();
       }
-    } else if (e.key === 'Escape' && showResults) {
-      clearSearch();
+    } else if (e.key === 'Escape') {
+      if (deleteMode) {
+        setDeleteMode(false);
+      } else if (showResults) {
+        clearSearch();
+      }
     } else if (showResults && searchResults.length > 0 && !calculationResult) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
@@ -576,7 +581,14 @@ export default function Home() {
   };
 
   const handleGridClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (draggedCard !== null || e.target !== e.currentTarget || !placementMode || !selectedWidget) return;
+    if (draggedCard !== null || e.target !== e.currentTarget) return;
+
+    if (deleteMode) {
+      setDeleteMode(false);
+      return;
+    }
+
+    if (!placementMode || !selectedWidget) return;
 
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -695,6 +707,13 @@ export default function Home() {
 
   const handleCardMouseDown = (e: React.MouseEvent<HTMLDivElement>, cardId: number) => {
     e.stopPropagation();
+
+    if (deleteMode) {
+      setCards(prev => prev.filter(card => card.id !== cardId));
+      setDeleteMode(false);
+      return;
+    }
+
     const rect = e.currentTarget.getBoundingClientRect();
     const containerRect = e.currentTarget.parentElement?.getBoundingClientRect();
     if (containerRect) {
@@ -902,10 +921,17 @@ export default function Home() {
         </button>
         <button
           onClick={() => {
-            setCards([]);
-            setCardId(0);
+            if (deleteMode) {
+              setDeleteMode(false);
+            } else {
+              setDeleteMode(true);
+            }
           }}
-          className="w-12 h-12 bg-gray-700 dark:bg-gray-700 rounded-full flex items-center justify-center transition-all duration-200 hover:bg-gray-600 dark:hover:bg-gray-600"
+          className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 ${
+            deleteMode
+              ? 'bg-red-600 hover:bg-red-700'
+              : 'bg-gray-700 dark:bg-gray-700 hover:bg-gray-600 dark:hover:bg-gray-600'
+          }`}
         >
           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -1288,8 +1314,12 @@ export default function Home() {
         return (
           <div
             key={card.id}
-            className={`absolute bg-gray-800/90 backdrop-blur-sm border rounded-lg p-4 cursor-move select-none transition-opacity ${
-              isDragging ? 'border-blue-400 shadow-lg opacity-80' : 'border-gray-600'
+            className={`absolute bg-gray-800/90 backdrop-blur-sm border rounded-lg p-4 select-none transition-all ${
+              isDragging
+                ? 'border-blue-400 shadow-lg opacity-80 cursor-move'
+                : deleteMode
+                ? 'border-red-400 cursor-pointer hover:bg-red-900/20'
+                : 'border-gray-600 cursor-move'
             }`}
             style={{
               left: position.x,
