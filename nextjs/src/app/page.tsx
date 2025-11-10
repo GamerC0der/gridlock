@@ -222,7 +222,7 @@ export default function Home() {
         {weatherData ? (
           <div className="text-center">
             <div className="text-2xl font-bold mb-1">
-              {convertTemperature(weatherData.weather.temperature + 10, temperatureUnit)}°{temperatureUnit}
+              {convertTemperature(weatherData.weather.temperature, temperatureUnit)}°{temperatureUnit}
             </div>
             <div className="text-sm font-medium mb-1">
               {weatherData.location.city}, {weatherData.location.country}
