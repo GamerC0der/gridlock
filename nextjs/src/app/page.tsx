@@ -129,6 +129,9 @@ export default function Home() {
   const [showHistory, setShowHistory] = useState(false);
   const [calculationResult, setCalculationResult] = useState<string | null>(null);
   const [deleteMode, setDeleteMode] = useState(false);
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [editingNoteCardId, setEditingNoteCardId] = useState<number | null>(null);
+  const [editingNoteText, setEditingNoteText] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const resultRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -376,7 +379,7 @@ export default function Home() {
     );
   });
 
-  const Note = memo(({ cardId }: { cardId: number }) => {
+  const Note = memo(({ cardId, onClick }: { cardId: number; onClick: () => void }) => {
     const [noteText, setNoteText] = useState('');
 
     useEffect(() => {
@@ -390,26 +393,22 @@ export default function Home() {
       }
     }, [cardId]);
 
-    const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const newText = e.target.value;
-      setNoteText(newText);
-      localStorage.setItem(`gridlock-note-${cardId}`, newText);
-    };
-
-    const handleMouseDown = (e: React.MouseEvent<HTMLTextAreaElement>) => {
+    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
       e.stopPropagation();
+      e.preventDefault();
+      onClick();
     };
 
     return (
-      <div className="h-full flex flex-col">
-        <textarea
-          value={noteText}
-          onChange={handleTextChange}
-          onMouseDown={handleMouseDown}
-          placeholder="Type your note here..."
-          className="w-full h-full bg-transparent text-white text-sm resize-none focus:outline-none placeholder-gray-500 p-2"
-          style={{ minHeight: '60px' }}
-        />
+      <div
+        className="h-full flex flex-col cursor-pointer hover:bg-gray-700/20 rounded transition-colors p-2"
+        onMouseDown={handleMouseDown}
+      >
+        <div className="w-full h-full text-white text-sm whitespace-pre-wrap overflow-hidden">
+          {noteText || (
+            <span className="text-gray-500 italic">Click to edit note...</span>
+          )}
+        </div>
       </div>
     );
   });
@@ -763,6 +762,41 @@ export default function Home() {
   const handleIframeCancel = () => {
     setShowIframeModal(false);
     setIframeUrl('');
+  };
+
+  const handleNoteClick = (cardId: number) => {
+    try {
+      const saved = localStorage.getItem(`gridlock-note-${cardId}`);
+      setEditingNoteCardId(cardId);
+      setEditingNoteText(saved || '');
+      setShowNoteModal(true);
+    } catch (error) {
+      console.warn(`Failed to load note for editing card ${cardId} from localStorage:`, error);
+      setEditingNoteCardId(cardId);
+      setEditingNoteText('');
+      setShowNoteModal(true);
+    }
+  };
+
+  const handleNoteConfirm = () => {
+    if (editingNoteCardId !== null) {
+      try {
+        localStorage.setItem(`gridlock-note-${editingNoteCardId}`, editingNoteText);
+        // Trigger a re-render by updating cards state to refresh the note display
+        setCards(prev => [...prev]);
+      } catch (error) {
+        console.warn(`Failed to save note for card ${editingNoteCardId} to localStorage:`, error);
+      }
+    }
+    setShowNoteModal(false);
+    setEditingNoteCardId(null);
+    setEditingNoteText('');
+  };
+
+  const handleNoteCancel = () => {
+    setShowNoteModal(false);
+    setEditingNoteCardId(null);
+    setEditingNoteText('');
   };
 
   useEffect(() => {
@@ -1325,7 +1359,7 @@ export default function Home() {
               </div>
             ) : card.type === 'note' ? (
               <div className="h-full p-1">
-                <Note key={card.id} cardId={card.id} />
+                <Note key={card.id} cardId={card.id} onClick={() => handleNoteClick(card.id)} />
               </div>
             ) : card.type === 'quote' ? (
               <div className="flex items-center justify-center h-full">
@@ -1485,6 +1519,49 @@ export default function Home() {
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
               >
                 Add Iframe
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showNoteModal && (
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gray-800/95 dark:bg-gray-800/95 backdrop-blur-md border border-gray-600 rounded-xl shadow-2xl p-6 w-full max-w-lg max-h-[80vh] relative">
+            <button
+              onClick={handleNoteCancel}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <h2 className="text-white text-xl font-semibold mb-6 text-center">Edit Note</h2>
+
+            <div className="space-y-4">
+              <div>
+                <textarea
+                  value={editingNoteText}
+                  onChange={(e) => setEditingNoteText(e.target.value)}
+                  placeholder="Type your note here..."
+                  className="w-full h-64 px-3 py-2 bg-gray-700 dark:bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={handleNoteCancel}
+                className="flex-1 px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleNoteConfirm}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Save Note
               </button>
             </div>
           </div>
